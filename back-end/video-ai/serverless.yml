@@ -1,0 +1,20 @@
+org: ipj31
+app: video-ai
+service: video-ai
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  httpApi:
+    id: ${params:apiGateway}
+
+plugins:
+  - serverless-offline
+
+functions:
+  hello:
+    handler: src/handler.hello
+    events:
+      - httpApi: "*"

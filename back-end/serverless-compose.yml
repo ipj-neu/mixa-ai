@@ -1,0 +1,9 @@
+
+services:
+  resources:
+    path: resources
+
+  video-ai:
+    path: video-ai
+    params:
+      apiGateway: ${resources:apiGateway}

@@ -1,0 +1,21 @@
+org: ipj31
+app: video-ai
+service: resources
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+
+resources:
+  ApiGatewayRestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: ${self:app}-gateway
+    
+  Outputs:
+    apiGateway:
+      Value:
+        Ref: ApiGatewayRestApi
+    
+  

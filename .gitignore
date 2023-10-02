@@ -1,0 +1,10 @@
+__pycache__/
+venv/
+
+.serverless/
+
+package-lock.json
+package.json
+node_modules/
+
+.env
