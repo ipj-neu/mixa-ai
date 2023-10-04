@@ -7,14 +7,33 @@ frameworkVersion: "3"
 provider:
   name: aws
   runtime: python3.11
-  httpApi:
-    id: ${params:apiGateway}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+package: 
+  individually: true
+  patterns:
+    - "!venv/**"
 
 plugins:
   - serverless-offline
+  - serverless-python-requirements
 
 functions:
-  hello:
-    handler: src/handler.hello
+  testing:
+    handler: src.handler.testing
+    layers:
+      - Ref: PythonRequirementsLambdaLayer
     events:
-      - httpApi: "*"
+      - httpApi: 
+          path: /testing
+          method: POST
+
+custom:
+  pythonRequirements:
+    layer: true

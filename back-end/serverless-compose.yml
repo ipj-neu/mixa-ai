@@ -5,5 +5,3 @@ services:
 
   video-ai:
     path: video-ai
-    params:
-      apiGateway: ${resources:apiGateway}

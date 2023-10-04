@@ -7,15 +7,33 @@ frameworkVersion: "3"
 provider:
   name: aws
 
+# All resources declared here and shared with other services
 resources:
-  ApiGatewayRestApi:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: ${self:app}-gateway
-    
-  Outputs:
-    apiGateway:
-      Value:
-        Ref: ApiGatewayRestApi
-    
-  
+  Resources:
+    Videos:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:app}-${opt:stage, self:provider.stage}-videos
+        CorsConfiguration:
+          CorsRules:
+            -
+              AllowedOrigins:
+                - '*'
+              AllowedMethods:
+                - 'GET'
+                - 'PUT'
+              AllowedHeaders:
+                - '*'
+    ChatSessions:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions
+        AttributeDefinitions:
+          - AttributeName: SessionId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: SessionId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
