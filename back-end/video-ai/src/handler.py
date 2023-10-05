@@ -21,7 +21,7 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def testing(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
+def testing_new(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
     stage = os.environ.get("STAGE", "dev")
     logger.info(f"Running in stage: {stage}")
 
@@ -47,8 +47,14 @@ def testing(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
     history = DynamoDBChatMessageHistory(table_name=table_name, session_id=session)
     memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=history, return_messages=True)
 
+    return {
+        "statusCode": 500,
+        "headers": {"Content-Type": "application/json"},
+        "body": json.dumps({"message": "Not implemented yet"}),
+    }
 
-def testing_old(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
+
+def testing(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
     stage = os.environ.get("STAGE", "dev")
     logger.info(f"Running in stage: {stage}")
 
@@ -93,7 +99,7 @@ def testing_old(event: dict[str, any], context: dict[str, any]) -> dict[str, any
     result = llm_chain.run({"input": message})
     logger.info(f"Result: {result}")
 
-    return {"statusCode": 200, "body": json.dumps({"message": result})}
+    return {"statusCode": 200, "headers": {"Content-Type": "application/json"}, "body": json.dumps({"message": result})}
 
 
 def on_message(event, context):

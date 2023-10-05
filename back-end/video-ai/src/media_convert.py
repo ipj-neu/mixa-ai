@@ -1,25 +1,30 @@
-from langchain.pydantic_v1 import BaseModel, Field, validator
+from langchain.pydantic_v1 import BaseModel, Field
 from typing import Sequence
 
+# TODO change vim setting to add a scroll offset and change the color of easy motion
 
-class InputClipping(BaseModel):
-    """The input clipping object (a segment of an input file). Start and end timecodes are in HH:MM:SS:FF format. One of the two must be specified, the other is optional."""
+# These are typings for the AI to output, will be converted to the correct format for the API in the tool
 
-    StartTimecode: str = Field(description="The start timecode of the input clipping. In HH:MM:SS:FF format.")
-    EndTimecode: str = Field(description="The end timecode of the input clipping. In HH:MM:SS:FF format.")
+
+class Timecode(BaseModel):
+    hours: int = Field(..., description="The hours of the timecode")
+    minutes: int = Field(..., description="The minutes of the timecode")
+    seconds: int = Field(..., description="The seconds of the timecode")
+    # SOLUTION need to make a frontend that will allow the user to scroll frame by frame and select a timecode
+    # TODO come up with a solution
+    # the media convert job needs uses frames instead of milliseconds or other time stamp
+    # this might be a problem for the user and/or the ai to figure out so i will leave it out for now
+    # frames: int = Field(..., description="The frames of the timecode")
+
+
+class Clipping(BaseModel):
+    start_time: Timecode = Field(..., description="The start time of the clipping. 0 if it is the start of the video")
+    end_time: Timecode = Field(..., description="The end time of the clipping. 0 if it is the end of the video")
 
 
 class Input(BaseModel):
-    """An input video for the job."""
-
-    FileInput: str = Field(..., description="The name of the input file.")
-    InputClippings: Sequence[InputClipping] = Field(..., description="The input clippings for the input file.")
-
-
-class Settings(BaseModel):
-    """The settings for cutting a video"""
-
-    Inputs: Sequence[Input] = Field(..., description="The inputs for the job.")
+    video_name: str = Field(..., description="The name of the input video")
+    input_clipping: Clipping = Field(..., description="The clipping of the input video")
 
 
 """
