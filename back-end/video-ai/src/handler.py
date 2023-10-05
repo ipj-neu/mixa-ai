@@ -1,3 +1,9 @@
+# to unzip the requirements when deployed to AWS Lambda
+try:
+    import unzip_requirements  # type: ignore
+except ImportError:
+    pass
+
 import json
 import os
 
@@ -15,15 +21,43 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def testing(event: dict[str, any], context: dict[str, any]):
-    os.environ["OPENAI_API_KEY"] = "APIKEY"
-    stage = "dev"  # need to change to an env
+def testing(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
+    stage = os.environ.get("STAGE", "dev")
+    logger.info(f"Running in stage: {stage}")
 
     body = json.loads(event.get("body", {}))
     message = body.get("message")
     session = body.get("session")
     table_name = f"video-ai-{stage}-chat-sessions"
 
+    dynamodb = boto3.resource("dynamodb")
+
+    table = dynamodb.Table(table_name)
+
+    response = table.get_item(Key={"SessionId": session})
+
+    if "Item" not in response:
+        table.put_item(
+            Item={
+                "SessionId": session,
+                "History": [],
+            }
+        )
+
+    history = DynamoDBChatMessageHistory(table_name=table_name, session_id=session)
+    memory = ConversationBufferMemory(memory_key="chat_history", chat_memory=history, return_messages=True)
+
+
+def testing_old(event: dict[str, any], context: dict[str, any]) -> dict[str, any]:
+    stage = os.environ.get("STAGE", "dev")
+    logger.info(f"Running in stage: {stage}")
+
+    body = json.loads(event.get("body", {}))
+    message = body.get("message")
+    session = body.get("session")
+    table_name = f"video-ai-{stage}-chat-sessions"
+
+    # this process of checking if the table exists and creating it should not need to happen later in development
     dynamodb = boto3.resource("dynamodb")
 
     table = dynamodb.Table(table_name)
