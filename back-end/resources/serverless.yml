@@ -6,24 +6,17 @@ frameworkVersion: "3"
 
 provider:
   name: aws
+  region: us-east-1
 
 # All resources declared here and shared with other services
 resources:
   Resources:
+    # S3 bucket for videos
     Videos:
       Type: AWS::S3::Bucket
       Properties:
         BucketName: ${self:app}-${opt:stage, self:provider.stage}-videos
-        CorsConfiguration:
-          CorsRules:
-            -
-              AllowedOrigins:
-                - '*'
-              AllowedMethods:
-                - 'GET'
-                - 'PUT'
-              AllowedHeaders:
-                - '*'
+    # Table chat sessions includes mesages and videos in a chat session
     ChatSessions:
       Type: AWS::DynamoDB::Table
       Properties:

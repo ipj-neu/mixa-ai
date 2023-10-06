@@ -3,5 +3,11 @@ services:
   resources:
     path: resources
 
+  auth:
+    path: auth
+
   video-ai:
     path: video-ai
+    params:
+      cognitoUserPoolId: ${auth.cognitoUserPoolId}
+      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}

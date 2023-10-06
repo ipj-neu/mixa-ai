@@ -9,8 +9,16 @@ useDotenv: true
 provider:
   name: aws
   runtime: python3.11
+  region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
+  httpApi:
+    authorizers:
+      cognitoAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
+        audience:
+          - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
@@ -34,6 +42,7 @@ functions:
   testing:
     handler: src.handler.testing
     events:
+      # TODO add authorizer
       - httpApi: 
           path: /testing
           method: POST

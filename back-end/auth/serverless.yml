@@ -1,0 +1,49 @@
+org: ipj31
+app: video-ai
+service: auth
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  region: us-east-1
+
+# Contains all resources for auth
+resources:
+  Resources:
+    # User pool
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+    # User pool client
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        UserPoolId:
+          Ref: CognitoUserPool
+    IdentityPool:
+      Type: AWS::Cognito::IdentityPool
+      Properties:
+        AllowUnauthenticatedIdentities: false
+        CognitoIdentityProviders:
+          - ClientId:
+              Ref: CognitoUserPoolClient
+            ProviderName:
+              Fn::GetAtt:
+                - CognitoUserPool
+                - ProviderName
+
+  Outputs:
+    cognitoUserPoolId:
+      Value:
+        Ref: CognitoUserPool
+    cognitoUserPoolClientId:
+      Value:
+        Ref: CognitoUserPoolClient
+    identityPoolId:
+      Value:
+        Ref: IdentityPool

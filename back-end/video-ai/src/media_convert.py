@@ -25,6 +25,8 @@ class Clipping(BaseModel):
 class Input(BaseModel):
     video_name: str = Field(..., description="The name of the input video")
     input_clipping: Clipping = Field(..., description="The clipping of the input video")
+    # this will checked used to find the correct video in the s3 bucket
+    video_name: str = Field(..., description="The name of the input video")
 
 
 """
