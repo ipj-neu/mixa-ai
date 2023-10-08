@@ -22,11 +22,25 @@ resources:
       Properties:
         TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions
         AttributeDefinitions:
-          - AttributeName: SessionId
+          - AttributeName: sessionId
+            AttributeType: S
+          - AttributeName: userId
             AttributeType: S
         KeySchema:
-          - AttributeName: SessionId
+          - AttributeName: sessionId
             KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL 
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1

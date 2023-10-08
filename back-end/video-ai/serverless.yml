@@ -37,22 +37,29 @@ plugins:
   - serverless-offline
   - serverless-python-requirements
   - serverless-dotenv-plugin
+  - serverless-prune-plugin
 
 functions:
-  testing:
-    handler: src.handler.testing
+  video-ai:
+    name: video-ai-${opt:stage, self:provider.stage}
+    handler: src.handler.handle_message
     events:
-      # TODO add authorizer
       - httpApi: 
-          path: /testing
+          path: /${opt:stage, self:provider.stage}/ai
           method: POST
+          authorizer:
+            name: cognitoAuthorizer
 
 custom:
   pythonRequirements:
     zip: true
     slim: true
+    dockerizePip: true
     noDeploy:
       - boto3
       - botocore
     pipCmdExtraArgs:
       - --platform manylinux2014_x86_64
+    
+  serverless-offline:
+    ignoreJWTSignature: true
