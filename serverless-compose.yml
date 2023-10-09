@@ -11,3 +11,6 @@ services:
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
+
+  socket:
+    path: socket

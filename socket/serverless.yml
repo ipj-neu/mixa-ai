@@ -1,0 +1,49 @@
+org: ipj31
+app: video-ai
+service: socket
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+package:
+  individually: true
+  patterns:
+    - "!venv/**"
+    - "!**/__pychache__/**"
+
+plugins:
+  - serverless-offline
+
+functions:
+  on-connect-socket:
+    name: on-connect-socket-${opt:stage, self:provider.stage}
+    handler: src.handler.on_connect
+    events:
+      - websocket:
+          route: $connect
+  on-disconnect-socket:
+    name: on-disconnect-socket-${opt:stage, self:provider.stage}
+    handler: src.handler.on_disconnect
+    events:
+      - websocket:
+          route: $disconnect
+  send-message:
+    name: send-message-${opt:stage, self:provider.stage}
+    handler: src.handler.send_message
+    environment:
+      DOMAIN_NAME: !Ref WebsocketsApi
+      REGION: ${self:provider.region}
+  
