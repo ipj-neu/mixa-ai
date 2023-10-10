@@ -21,6 +21,12 @@ from typing import Sequence
 #   aud1: vid1 1:21:00 - vid2 00:05:00 might need to change this. wondering what the user is likely to input
 
 
+# NOTE data needed for the tool not coming from the ai that the i need to configure the job
+# - the frame rate of the input video
+# - the height and width (pixels) of the video. potential issue where the over layed videos of different sizes not will be scaled to the size of the input video
+#   - could potentially scale all videos when uploaded to the s3 bucket, not great but it would work, more expensive, premium feature??
+
+
 # NOTE will need to add some info pages to explain how to best use it not matter what i do
 
 
