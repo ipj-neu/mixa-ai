@@ -1,7 +1,28 @@
 from langchain.pydantic_v1 import BaseModel, Field
 from typing import Sequence
 
-# TODO change vim setting to add a scroll offset and change the color of easy motion
+# TODO need to look at the rek data because it will shape how this tools input should work
+# TODO REWORK THIS
+# NOTE OH MY GOD OH MY GOD the audio can be the main input and i can make it generate black video and then overlay many videos on top of it!!!
+# works like a charm :) thank goodness i thought of this
+# with this technique i can make way more complex videos
+# NOTE realizing that this tool would not be the best complex video editing which is fine because the main appeal will be the analysis and the ability to create a job from that
+# this needs to be an easy way to create a job based on human input and the rek data
+# i can and should really do a lot to keep the output as simply as possible for the ai. the ai should be able to take the human input and the rek data and create a job easily
+##############################################
+# THINGS IT SHOULD BE ABLE TO FIGURE OUT BASED ON HUMAN OUTPUT
+# - the clips from videos the user wants
+#   - any clips to be over layed on top of the input video
+# - what audio to use and where to put it
+# example:
+#   vid1: 1:20.33 - 1:30.00
+#   vid2: 0:00.00 - 0:10.00
+#   vid3: 0:00.00 - 0:10.00
+#   aud1: vid1 1:21:00 - vid2 00:05:00 might need to change this. wondering what the user is likely to input
+
+
+# NOTE will need to add some info pages to explain how to best use it not matter what i do
+
 
 # These are typings for the AI to output, will be converted to the correct format for the API in the tool
 
@@ -10,11 +31,8 @@ class Timecode(BaseModel):
     hours: int = Field(..., description="The hours of the timecode")
     minutes: int = Field(..., description="The minutes of the timecode")
     seconds: int = Field(..., description="The seconds of the timecode")
-    # SOLUTION need to make a frontend that will allow the user to scroll frame by frame and select a timecode
-    # TODO come up with a solution
-    # the media convert job needs uses frames instead of milliseconds or other time stamp
-    # this might be a problem for the user and/or the ai to figure out so i will leave it out for now
-    # frames: int = Field(..., description="The frames of the timecode")
+    # the frame rate will be stored in the chat db and can be used to convert the timecode to milliseconds
+    milliseconds: int = Field(..., description="The milliseconds of the timecode")
 
 
 class Clipping(BaseModel):
@@ -22,11 +40,40 @@ class Clipping(BaseModel):
     end_time: Timecode = Field(..., description="The end time of the clipping. 0 if it is the end of the video")
 
 
+class VideoOverlay(BaseModel):
+    video_name: str = Field(..., description="The name of the video to overlay")
+    # might need an end time, but i think it might just go until the end of the overlay video
+    # if end time is required, then it can be calculated based on the length of the overlay video
+    # start time needs to also match the start time of the input video so if the start of the input is 00:01:00:00 and the user wants it to start 5 secs into the secs into the clip
+    # then the start time of the overlay needs to be 00:01:05:00
+    start_time: Timecode = Field(
+        ..., description="Where to put the overlay on the underlying video. 0 if it is the start of the video"
+    )
+    overlay_clippings: Sequence[Clipping] = Field([], description="The clippings of the overlay video, an be empty")
+
+
+class ImageOverlay(BaseModel):
+    # NOTE can add more to this if wanted, like opacity, size, etc
+    # TODO might need to add size anyway
+    image_name: str = Field(..., description="The name of the image to overlay")
+    start_time: Timecode = Field(..., description="Where start the image overlay")
+    duration: Timecode = Field(..., description="The duration of the image overlay")
+
+
 class Input(BaseModel):
     video_name: str = Field(..., description="The name of the input video")
     input_clipping: Clipping = Field(..., description="The clipping of the input video")
     # this will checked used to find the correct video in the s3 bucket
     video_name: str = Field(..., description="The name of the input video")
+    # adding multiple audio tracks is supported but can
+    use_audio: bool = Field(
+        True, description="Whether to use the audio of the input video or not, if not specified it should be true"
+    )
+    alternate_audio_name: str = Field(
+        ..., description="The name of the audio to use if use_audio is false, can be empty"
+    )
+    video_overlays: Sequence[VideoOverlay] = Field([], description="Videos to overlay on top of input, can be empty")
+    image_overlays: Sequence[ImageOverlay] = Field([], description="Images to overlay on top of input, can be empty")
 
 
 class JobSettings(BaseModel):

@@ -5,6 +5,8 @@ import os
 def on_connect(event, context):
     print("on_connect")
     stage = os.getenv("STAGE")
+    if "queryStringParameters" not in event or "userId" not in event["queryStringParameters"]:
+        return {"statusCode": 400, "body": "missing userId"}
     user_id = event["queryStringParameters"]["userId"]
     table_name = f"video-ai-{stage}-connections"
 
@@ -20,26 +22,33 @@ def on_disconnect(event, context):
     table_name = f"video-ai-{stage}-connections"
 
     table = boto3.resource("dynamodb").Table(table_name)
-    table.delete_item(Key={"connectionId": event["requestContext"]["connectionId"]})
+    connectionId = event["requestContext"]["connectionId"]
+
+    connections = table.query(KeyConditionExpression=boto3.dynamodb.conditions.Key("connectionId").eq(connectionId))
+    print(connections)
+    for item in connections["Items"]:
+        table.delete_item(Key={"connectionId": connectionId, "userId": item["userId"]})
     return {"statusCode": 200}
 
 
 def send_message(event, context):
+    # HACK this function needs to be changed to be used in the step function
+    #   DO NOT FOCUS ON THIS NOT A PRIORITY RIGHT NOW
     """This function is made to be used in te step function to send users updates"""
     print("send_message")
+    stage = os.getenv("STAGE")
     domain_name = os.getenv("DOMAIN_NAME")
     region = os.getenv("REGION")
-    stage = os.getenv("STAGE")
     print(type(domain_name))
 
-    # TODO figure out how i want to get the user id in the step function
+    # TODO figure out how i want to get the user id and data in the step function
     userId = ""
+    data = {}
 
-    # TODO after getting the user id query the connections table and send the message to the correct connections
-    # remove connectionId
-    connectionId = ""
     table_name = f"video-ai-{stage}-connections"
     table = boto3.resource("dynamodb").Table(table_name)
+
+    connections = table.query(KeyConditionExpression=boto3.dynamodb.conditions.Key("userId").eq(userId))
 
     url = f"https://{domain_name}.execute-api.{region}.amazonaws.com/{stage}"
     print(url)
@@ -48,9 +57,10 @@ def send_message(event, context):
         endpoint_url=url,
     )
 
-    try:
-        client.post_to_connection(ConnectionId=connectionId, Data="testing")
-    except client.exceptions.GoneException:
-        print("connection does not exist: " + connectionId)
+    for connection in connections["Items"]:
+        try:
+            client.post_to_connection(ConnectionId=connection["connectionId"], Data=data)
+        except client.exceptions.GoneException:
+            print("connection does not exist: " + connection["connectionId"])
 
     return {"statusCode": 200}
