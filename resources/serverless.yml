@@ -44,6 +44,7 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+    # Table connections includes all connections for a user
     Connections:
       Type: AWS::DynamoDB::Table
       Properties:

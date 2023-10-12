@@ -11,6 +11,7 @@ provider:
 # Contains all resources for auth
 resources:
   Resources:
+
     # User pool
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
@@ -19,6 +20,7 @@ resources:
           - email
         AutoVerifiedAttributes:
           - email
+
     # User pool client
     CognitoUserPoolClient:
       Type: AWS::Cognito::UserPoolClient
@@ -31,11 +33,12 @@ resources:
           - ALLOW_REFRESH_TOKEN_AUTH
           - ALLOW_USER_SRP_AUTH
           - ALLOW_CUSTOM_AUTH
+          
     # Identity pool
     IdentityPool:
       Type: AWS::Cognito::IdentityPool
       Properties:
-        AllowUnauthenticatedIdentities: false
+        AllowUnauthenticatedIdentities: true
         CognitoIdentityProviders:
           - ClientId:
               Ref: CognitoUserPoolClient
@@ -43,6 +46,152 @@ resources:
               Fn::GetAtt:
                 - CognitoUserPool
                 - ProviderName
+
+    # TODO replace s3 arn with output from resources
+    # IAM role for authenticated users
+    AuthenticatedRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Federated: "cognito-identity.amazonaws.com"
+              Action:
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals:
+                  cognito-identity.amazonaws.com:aud: 
+                    Ref: IdentityPool
+                ForAnyValue:StringLike:
+                  cognito-identity.amazonaws.com:amr: authenticated
+        Policies:
+          - PolicyName: "CognitoS3AccessPolicy"
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/public/*
+                    # this is the ugliest fix but it works stops serverless from thinking it should resolve the variable
+                    - Fn::Join:
+                        - ""
+                        - - "arn:aws:s3:::"
+                          - "${self:app}-${opt:stage, self:provider.stage}-videos/protected/$"
+                          - "{cognito-identity.amazonaws.com:sub"
+                          - "}/*"
+                    - Fn::Join:
+                        - ""
+                        - - "arn:aws:s3:::"
+                          - "${self:app}-${opt:stage, self:provider.stage}-videos/private/$"
+                          - "{cognito-identity.amazonaws.com:sub"
+                          - "}/*"
+                  Effect: Allow
+                - Action:
+                    - s3:PutObject
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/uploads/*
+                  Effect: Allow
+                - Action:
+                    - s3:GetObject
+                  Resource: arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/protected/*
+                  Effect: Allow
+                - Condition:
+                    StringLike:
+                      s3:prefix:
+                        - public/
+                        - public/*
+                        - protected/
+                        - protected/*
+                        - private/
+                        - Fn::Join:
+                            - ""
+                            - - "private/$"
+                              - "{cognito-identity.amazonaws.com:sub"
+                              - "}/"
+                        - Fn::Join:
+                            - ""
+                            - - "private/$"
+                              - "{cognito-identity.amazonaws.com:sub"
+                              - "}/*"
+                  Action:
+                    - s3:ListBucket
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos
+                  Effect: Allow
+                  
+    # IAM role for unauthenticated users
+    UnauthenticatedRole:
+      Type: AWS::IAM::Role
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Federated: "cognito-identity.amazonaws.com"
+              Action:
+                - "sts:AssumeRoleWithWebIdentity"
+              Condition:
+                StringEquals:
+                  cognito-identity.amazonaws.com:aud: 
+                    Ref: IdentityPool
+                ForAnyValue:StringLike:
+                  cognito-identity.amazonaws.com:amr: unauthenticated
+        Policies:
+          - PolicyName: "S3Access"
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Action:
+                    - s3:GetObject
+                    - s3:PutObject
+                    - s3:DeleteObject
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/public/*
+                  Effect: Allow
+                - Action:
+                    - s3:PutObject
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/uploads/*
+                  Effect: Allow
+                - Action:
+                    - s3:GetObject
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/protected/*
+                  Effect: Allow
+                - Condition:
+                    StringLike:
+                      s3:prefix:
+                        - public/
+                        - public/*
+                        - protected/
+                        - protected/*
+                  Action:
+                    - s3:ListBucket
+                  Resource:
+                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos
+                  Effect: Allow
+
+    # Identity role attachment for users
+    IdentityRoleAttachment:
+      Type: AWS::Cognito::IdentityPoolRoleAttachment
+      Properties:
+        IdentityPoolId:
+          Ref: IdentityPool
+        Roles:
+          authenticated:
+            Fn::GetAtt:
+              - AuthenticatedRole
+              - Arn
+          unauthenticated:
+            Fn::GetAtt:
+              - UnauthenticatedRole
+              - Arn
 
   Outputs:
     cognitoUserPoolId:
