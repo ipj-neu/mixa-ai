@@ -1,11 +1,16 @@
 
 services:
+  process-video:
+    path: process-video
+
   resources:
     path: resources
 
   auth:
     path: auth
-
+    params:
+      videosS3Name: ${process-video.videosS3Name}
+      
   video-ai:
     path: video-ai
     params:

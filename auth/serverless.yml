@@ -76,29 +76,29 @@ resources:
                     - s3:PutObject
                     - s3:DeleteObject
                   Resource:
-                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/public/*
+                    - arn:aws:s3:::${param:videosS3Name}/public/*
                     # this is the ugliest fix but it works stops serverless from thinking it should resolve the variable
                     - Fn::Join:
                         - ""
                         - - "arn:aws:s3:::"
-                          - "${self:app}-${opt:stage, self:provider.stage}-videos/protected/$"
+                          - "${param:videosS3Name}/protected/$"
                           - "{cognito-identity.amazonaws.com:sub"
                           - "}/*"
                     - Fn::Join:
                         - ""
                         - - "arn:aws:s3:::"
-                          - "${self:app}-${opt:stage, self:provider.stage}-videos/private/$"
+                          - "${param:videosS3Name}/private/$"
                           - "{cognito-identity.amazonaws.com:sub"
                           - "}/*"
                   Effect: Allow
                 - Action:
                     - s3:PutObject
                   Resource:
-                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/uploads/*
+                    - arn:aws:s3:::${param:videosS3Name}/uploads/*
                   Effect: Allow
                 - Action:
                     - s3:GetObject
-                  Resource: arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos/protected/*
+                  Resource: arn:aws:s3:::${param:videosS3Name}/protected/*
                   Effect: Allow
                 - Condition:
                     StringLike:
@@ -121,7 +121,7 @@ resources:
                   Action:
                     - s3:ListBucket
                   Resource:
-                    - arn:aws:s3:::${self:app}-${opt:stage, self:provider.stage}-videos
+                    - arn:aws:s3:::${param:videosS3Name}
                   Effect: Allow
                   
     # IAM role for unauthenticated users

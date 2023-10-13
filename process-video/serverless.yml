@@ -1,0 +1,62 @@
+org: ipj31
+app: video-ai
+service: video-processing
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: python3.11
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  s3:
+    videos:
+      name: ${self:app}-videos-${opt:stage, self:provider.stage}
+      corsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - "*"
+            AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+              - DELETE
+              - HEAD
+            ExposedHeaders:
+              - "x-amz-server-side-encryption"
+              - "x-amz-request-id"
+              - "x-amz-id-2"
+              - "ETag"
+              - "x-amz-meta-foo"
+            MaxAge: 3000
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "s3:*"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+
+functions:
+  process:
+    name: ${self:service}-${opt:stage, self:provider.stage}-process
+    handler: handler.on_new_video
+    events:
+      - s3:
+          bucket: videos
+          event: s3:ObjectCreated:*
+
+resources:
+  Outputs:
+    videosS3Name:
+      Value:
+        Ref: S3BucketVideos
+        
