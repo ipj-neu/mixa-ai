@@ -6,7 +6,7 @@ except ImportError:
 
 import json
 import os
-from typing import Dict
+from typing import Dict, Any, List
 
 import boto3
 from pprint import pprint
@@ -23,16 +23,10 @@ from langchain.tools.render import format_tool_to_openai_function
 
 import logging
 
-from src.media_convert import JobSettings, JobCreationInput
+from src.media_convert import ToolInput, Input
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
-def testing_tool(input_settings: Dict) -> str:
-    setting = JobSettings(**input_settings)
-    print(type(setting))
-    return f"I'll make that for you! It could take a second..."
 
 
 def handle_message(event, context):
@@ -43,8 +37,19 @@ def handle_message(event, context):
     body = json.loads(event.get("body", {}))
     message = body.get("message")
     session = body.get("session")
+    # HACK possible a better way to get the table name
     table_name = f"video-ai-{stage}-chat-sessions"
     user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+
+    # defining the tool
+    def testing_tool(inputs: List[Dict[str, Any]]) -> str:
+        print(session)
+        print(user_id)
+        media_convert = boto3.client("mediaconvert")
+        inputs = [Input(**input) for input in inputs]
+        print(inputs)
+
+        return f"I'll make that for you! It could take a second..."
 
     # this process of checking if the table exists and creating it should not need to happen later in development
     dynamodb = boto3.resource("dynamodb")
@@ -73,7 +78,7 @@ def handle_message(event, context):
             name="create_job",
             func=testing_tool,
             description="testing tool",
-            args_schema=JobCreationInput,
+            args_schema=ToolInput,
             return_direct=True,
         )
     ]
@@ -107,52 +112,52 @@ def blank_lambda(event: dict[str, any], context) -> dict[str, any]:
     }
 
 
-def testing(event: dict[str, any], context) -> dict[str, any]:
-    stage = os.environ.get("STAGE", "dev")
-    logger.info(f"Running in stage: {stage}")
+# def testing(event: dict[str, any], context) -> dict[str, any]:
+#     stage = os.environ.get("STAGE", "dev")
+#     logger.info(f"Running in stage: {stage}")
 
-    # this is all code for http stuff and will be moved when moved to step function
-    body = json.loads(event.get("body", {}))
-    message = body.get("message")
-    session = body.get("session")
-    table_name = f"video-ai-{stage}-chat-sessions"
-    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+#     # this is all code for http stuff and will be moved when moved to step function
+#     body = json.loads(event.get("body", {}))
+#     message = body.get("message")
+#     session = body.get("session")
+#     table_name = f"video-ai-{stage}-chat-sessions"
+#     user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
 
-    llm = ChatOpenAI()
-    tools = [
-        Tool.from_function(
-            name="create_job",
-            func=testing_tool,
-            description="testing tool",
-            args_schema=JobCreationInput,
-            return_direct=True,
-        )
-    ]
+#     llm = ChatOpenAI()
+#     tools = [
+#         Tool.from_function(
+#             name="create_job",
+#             func=testing_tool,
+#             description="testing tool",
+#             args_schema=ToolInput,
+#             return_direct=True,
+#         )
+#     ]
 
-    agent: OpenAIFunctionsAgent = OpenAIFunctionsAgent.from_llm_and_tools(llm=llm, tools=tools)
+#     agent: OpenAIFunctionsAgent = OpenAIFunctionsAgent.from_llm_and_tools(llm=llm, tools=tools)
 
-    executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-    message = executor.run(
-        {
-            "input": "create a job from ThisVid.mp4 from 0:00:00 to 0:00:10 then create a different job for OtherVid.mp4 with timestamps 0:00:30 to 0:00:40"
-        }
-    )
+#     executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+#     message = executor.run(
+#         {
+#             "input": "create a job from ThisVid.mp4 from 0:00:00 to 0:00:10 then create a different job for OtherVid.mp4 with timestamps 0:00:30 to 0:00:40"
+#         }
+#     )
 
-    return {
-        "statusCode": 200,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"message": "This is a test function"}),
-    }
+#     return {
+#         "statusCode": 200,
+#         "headers": {"Content-Type": "application/json"},
+#         "body": json.dumps({"message": "This is a test function"}),
+#     }
 
 
-if __name__ == "__main__":
-    tools = [
-        Tool.from_function(
-            name="create_job",
-            func=testing_tool,
-            description="testing tool",
-            args_schema=JobCreationInput,
-            return_direct=True,
-        )
-    ]
-    print(format_tool_to_openai_function(tools[0]))
+# if __name__ == "__main__":
+#     tools = [
+#         Tool.from_function(
+#             name="create_job",
+#             func=testing_tool,
+#             description="testing tool",
+#             args_schema=ToolInput,
+#             return_direct=True,
+#         )
+#     ]
+#     print(format_tool_to_openai_function(tools[0]))

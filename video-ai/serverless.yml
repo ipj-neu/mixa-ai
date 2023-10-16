@@ -42,7 +42,7 @@ plugins:
 functions:
   video-ai:
     name: video-ai-${opt:stage, self:provider.stage}
-    handler: src.handler.blank_lambda
+    handler: src.handler.handle_message
     events:
       - httpApi: 
           path: /${opt:stage, self:provider.stage}/ai

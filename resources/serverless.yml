@@ -68,3 +68,78 @@ resources:
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+
+    # TODO Possibly rename with stage
+    RekSNSTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: RekSNSTopic
+
+    RekSQSQueue:
+      Type: "AWS::SQS::Queue"
+      Properties:
+        QueueName: RekSQSQueue              
+
+    RekSNSTopicSubscription:
+      Type: "AWS::SNS::Subscription"
+      Properties:
+        Protocol: "sqs"
+        TopicArn:
+          Ref: RekSNSTopic
+        Endpoint:
+          Fn::GetAtt:
+            - RekSQSQueue
+            - Arn
+
+    RekSNSTopicPolicy:
+      Type: "AWS::SQS::QueuePolicy"
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal: "*"
+              Action: sqs:SendMessage
+              Resource:
+                Fn::GetAtt:
+                  - RekSQSQueue
+                  - Arn
+              Condition:
+                ArnEquals:
+                  "aws:SourceArn":
+                    Ref: RekSNSTopic
+        Queues: [ !Ref RekSQSQueue ]
+    
+    RekSNSPublishRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Principal:
+                Service:
+                  - "rekognition.amazonaws.com"
+              Action:
+                - "sts:AssumeRole"
+        Policies:
+          - PolicyName: "PublishToSNSTopic"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: "Allow"
+                  Action:
+                    - "sns:Publish"
+                  Resource:
+                    - !Ref RekSNSTopic
+
+  Outputs:
+    rekRole:
+      Value:
+        Fn::GetAtt:
+          - RekSNSPublishRole
+          - Arn
+
+    rekSNSTopic:
+      Value:
+        Ref: RekSNSTopic

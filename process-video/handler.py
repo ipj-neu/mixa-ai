@@ -12,6 +12,8 @@ def on_new_video(event, context):
     user_id = key.split("/")[2]
     session_id = key.split("/")[3]
 
+    rek_client = boto3.client("rekognition")
+
     table.update_item(
         Key={"sessionId": session_id, "userId": user_id},
         UpdateExpression="ADD videoFiles :file",

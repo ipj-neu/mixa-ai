@@ -1,10 +1,10 @@
 
 services:
-  process-video:
-    path: process-video
-
   resources:
     path: resources
+
+  process-video:
+    path: process-video
 
   auth:
     path: auth
