@@ -47,7 +47,6 @@ resources:
                 - CognitoUserPool
                 - ProviderName
 
-    # TODO replace s3 arn with output from resources
     # IAM role for authenticated users
     AuthenticatedRole:
       Type: AWS::IAM::Role

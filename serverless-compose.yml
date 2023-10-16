@@ -5,6 +5,14 @@ services:
 
   process-video:
     path: process-video
+    params:
+      rekSNSTopic: ${resources.rekSNSTopic}
+      rekRole: ${resources.rekRole}
+
+  process-rek:
+    path: process-rek
+    params:
+      rekSQSQueue: ${resources.rekSQSQueue}
 
   auth:
     path: auth
@@ -17,5 +25,5 @@ services:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
 
-  socket:
-    path: socket
+  # socket:
+  #   path: socket

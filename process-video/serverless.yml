@@ -43,16 +43,27 @@ provider:
           Action:
             - "dynamodb:*"
           Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "rekognition:StartLabelDetection"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "iam:PassRole"
+          Resource: "*"
 
 
 functions:
   process:
-    name: ${self:service}-${opt:stage, self:provider.stage}-process
+    name: ${self:service}-${opt:stage, self:provider.stage}
     handler: handler.on_new_video
     events:
       - s3:
           bucket: videos
           event: s3:ObjectCreated:*
+    environment:
+      REK_SNS_TOPIC: ${param:rekSNSTopic}
+      REK_ROLE: ${param:rekRole}
 
 resources:
   Outputs:

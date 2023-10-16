@@ -1,0 +1,34 @@
+org: ipj31
+app: video-ai
+service: process-rek
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "rekognition:GetLabelDetection"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+plugins:
+  - serverless-offline
+
+functions:
+  process:
+    name: ${self:service}-${opt:stage, self:provider.stage}
+    handler: handler.handler
+    events:
+      - sqs:
+          arn: ${param:rekSQSQueue}

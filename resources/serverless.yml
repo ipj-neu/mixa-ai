@@ -143,3 +143,9 @@ resources:
     rekSNSTopic:
       Value:
         Ref: RekSNSTopic
+    
+    rekSQSQueue:
+      Value:
+        Fn::GetAtt:
+          - RekSQSQueue
+          - Arn
