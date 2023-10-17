@@ -1,0 +1,62 @@
+org: ipj31
+app: video-ai
+service: chat-sessions
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  httpApi:
+    authorizers:
+      cognitoAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
+        audience:
+          - ${param:cognitoUserPoolClientId}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+plugins:
+  - serverless-offline
+
+functions:
+  create-chat-session:
+    name: create-chat-sessions-${opt:stage, self:provider.stage}
+    handler: handle_post.handler
+    events:
+      - httpApi: 
+          path: /${opt:stage, self:provider.stage}/chat
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+  delete-chat-session:
+    name: delete-chat-sessions-${opt:stage, self:provider.stage}
+    handler: handle_delete.handler
+    events:
+      - httpApi: 
+          path: /${opt:stage, self:provider.stage}/chat/{sessionId}
+          method: DELETE
+          authorizer:
+            name: cognitoAuthorizer
+
+  get-conversation:
+    name: get-conversation-${opt:stage, self:provider.stage}
+    handler: handle_get.handler
+    events:
+      - httpApi: 
+          path: /${opt:stage, self:provider.stage}/chat/{sessionId}
+          method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+custom:
+  serverless-offline:
+    ignoreJWTSignature: true

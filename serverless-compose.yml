@@ -25,5 +25,11 @@ services:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
 
+  chat-sessions:
+    path: chat-sessions
+    params:
+      cognitoUserPoolId: ${auth.cognitoUserPoolId}
+      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
+
   # socket:
   #   path: socket
