@@ -26,6 +26,9 @@ provider:
 plugins:
   - serverless-offline
 
+package: 
+  individually: true
+
 # TODO add packaging for each function's handler
 functions:
   create-chat-session:
