@@ -52,6 +52,16 @@ provider:
             - "iam:PassRole"
           Resource: "*"
 
+layers:
+  ffprobe:
+    path: layers
+    compatibleRuntimes:
+      - python3.11
+
+package: 
+  patterns:
+    - "!layers/**"
+
 
 functions:
   process:
@@ -61,6 +71,9 @@ functions:
       - s3:
           bucket: videos
           event: s3:ObjectCreated:*
+
+    layers:
+      - !Ref FfprobeLambdaLayer
     environment:
       REK_SNS_TOPIC: ${param:rekSNSTopic}
       REK_ROLE: ${param:rekRole}
