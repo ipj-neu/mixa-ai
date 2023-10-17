@@ -26,6 +26,7 @@ provider:
 plugins:
   - serverless-offline
 
+# TODO add packaging for each function's handler
 functions:
   create-chat-session:
     name: create-chat-sessions-${opt:stage, self:provider.stage}
