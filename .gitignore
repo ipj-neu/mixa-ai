@@ -3,7 +3,6 @@ venv/
 
 .serverless/
 
-package-lock.json
 node_modules/
 
 .env
@@ -12,4 +11,4 @@ node_modules/
 
 cmds/
 
-ffprobe
+ffprobe-layer/

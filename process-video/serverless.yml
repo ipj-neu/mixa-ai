@@ -54,13 +54,13 @@ provider:
 
 layers:
   ffprobe:
-    path: layers
+    path: ffprobe-layer
     compatibleRuntimes:
       - python3.11
 
-package: 
+package:
   patterns:
-    - "!layers/**"
+    - "!ffprobe-layer/**"
 
 functions:
   process:
@@ -82,4 +82,3 @@ resources:
     videosS3Name:
       Value:
         Ref: S3BucketVideos
-        
