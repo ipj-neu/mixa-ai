@@ -23,7 +23,9 @@ package:
   exclude:
     - venv/**
     - __pycache__/**
+    - requirements.txt
     - authorizer.py
+    - notify-user.py
 
 plugins:
   - serverless-offline
@@ -59,6 +61,23 @@ functions:
     environment:
       COGNITO_USER_POOL_ID: ${param:cognitoUserPoolId}
       REGION: ${self:provider.region}
+
+  notify-user:
+    name: notify-user-${opt:stage, self:provider.stage}
+    handler: notify-user.handler
+    package:
+      exclude:
+        - handler.py
+      include:
+        - notify-user.py
+    environment:
+      DOMAIN: !Ref WebsocketsApi
+      REGION: ${self:provider.region}
+    events:
+      - stream:
+          arn: ${param:statusesTableStreamArn}
+          filterPatterns:
+            - eventName: [MODIFY]
 
 custom:
   pythonRequirements:

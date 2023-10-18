@@ -34,3 +34,4 @@ services:
     path: socket
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
+      statusesTableStreamArn: ${resources.statusesTableStreamArn}

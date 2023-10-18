@@ -32,7 +32,7 @@ resources:
               - AttributeName: userId
                 KeyType: HASH
             Projection:
-              ProjectionType: ALL 
+              ProjectionType: ALL
             ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
@@ -61,13 +61,44 @@ resources:
               - AttributeName: userId
                 KeyType: HASH
             Projection:
-              ProjectionType: ALL 
+              ProjectionType: ALL
             ProvisionedThroughput:
               ReadCapacityUnits: 1
               WriteCapacityUnits: 1
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
+
+    # table for step function statuses and streaming to lambda
+    MessageProcessingStatuses:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-message-processing-statuses
+        AttributeDefinitions:
+          - AttributeName: executionId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: executionId
+            KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        StreamSpecification:
+          StreamViewType: NEW_AND_OLD_IMAGES
 
     # TODO Possibly rename with stage
     RekSNSTopic:
@@ -78,7 +109,7 @@ resources:
     RekSQSQueue:
       Type: "AWS::SQS::Queue"
       Properties:
-        QueueName: RekSQSQueue              
+        QueueName: RekSQSQueue
 
     RekSNSTopicSubscription:
       Type: "AWS::SNS::Subscription"
@@ -108,8 +139,8 @@ resources:
                 ArnEquals:
                   "aws:SourceArn":
                     Ref: RekSNSTopic
-        Queues: [ !Ref RekSQSQueue ]
-    
+        Queues: [!Ref RekSQSQueue]
+
     RekSNSPublishRole:
       Type: "AWS::IAM::Role"
       Properties:
@@ -143,9 +174,15 @@ resources:
     rekSNSTopic:
       Value:
         Ref: RekSNSTopic
-    
+
     rekSQSQueue:
       Value:
         Fn::GetAtt:
           - RekSQSQueue
           - Arn
+
+    statusesTableStreamArn:
+      Value:
+        Fn::GetAtt:
+          - MessageProcessingStatuses
+          - StreamArn
