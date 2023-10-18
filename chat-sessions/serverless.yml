@@ -26,16 +26,18 @@ provider:
 plugins:
   - serverless-offline
 
-package: 
+package:
   individually: true
 
-# TODO add packaging for each function's handler
 functions:
   create-chat-session:
     name: create-chat-sessions-${opt:stage, self:provider.stage}
     handler: handle_post.handler
+    package:
+      include:
+        - handle_post.py
     events:
-      - httpApi: 
+      - httpApi:
           path: /${opt:stage, self:provider.stage}/chat
           method: POST
           authorizer:
@@ -44,8 +46,11 @@ functions:
   delete-chat-session:
     name: delete-chat-sessions-${opt:stage, self:provider.stage}
     handler: handle_delete.handler
+    package:
+      include:
+        - handle_delete.py
     events:
-      - httpApi: 
+      - httpApi:
           path: /${opt:stage, self:provider.stage}/chat/{sessionId}
           method: DELETE
           authorizer:
@@ -54,8 +59,11 @@ functions:
   get-conversation:
     name: get-conversation-${opt:stage, self:provider.stage}
     handler: handle_get.handler
+    package:
+      include:
+        - handle_get.py
     events:
-      - httpApi: 
+      - httpApi:
           path: /${opt:stage, self:provider.stage}/chat/{sessionId}
           method: GET
           authorizer:

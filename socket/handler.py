@@ -5,9 +5,7 @@ import os
 def on_connect(event, context):
     print("on_connect")
     stage = os.getenv("STAGE")
-    if "queryStringParameters" not in event or "userId" not in event["queryStringParameters"]:
-        return {"statusCode": 400, "body": "missing userId"}
-    user_id = event["queryStringParameters"]["userId"]
+    user_id = event["requestContext"]["authorizer"]["principalId"]
     table_name = f"video-ai-{stage}-connections"
 
     table = boto3.resource("dynamodb").Table(table_name)
@@ -24,10 +22,13 @@ def on_disconnect(event, context):
     table = boto3.resource("dynamodb").Table(table_name)
     connectionId = event["requestContext"]["connectionId"]
 
-    connections = table.query(KeyConditionExpression=boto3.dynamodb.conditions.Key("connectionId").eq(connectionId))
-    print(connections)
-    for item in connections["Items"]:
-        table.delete_item(Key={"connectionId": connectionId, "userId": item["userId"]})
+    try:
+        connections = table.query(KeyConditionExpression=boto3.dynamodb.conditions.Key("connectionId").eq(connectionId))
+        for item in connections["Items"]:
+            table.delete_item(Key={"connectionId": connectionId, "userId": item["userId"]})
+    except Exception as e:
+        print(e)
+
     return {"statusCode": 200}
 
 
@@ -61,6 +62,7 @@ def send_message(event, context):
         try:
             client.post_to_connection(ConnectionId=connection["connectionId"], Data=data)
         except client.exceptions.GoneException:
+            connections.delete_item(Key={"connectionId": connection["connectionId"], "userId": userId})
             print("connection does not exist: " + connection["connectionId"])
 
     return {"statusCode": 200}

@@ -20,30 +20,46 @@ provider:
 
 package:
   individually: true
-  patterns:
-    - "!venv/**"
-    - "!**/__pychache__/**"
+  exclude:
+    - venv/**
+    - __pycache__/**
+    - authorizer.py
 
 plugins:
   - serverless-offline
+  - serverless-python-requirements
 
 functions:
   on-connect-socket:
     name: on-connect-socket-${opt:stage, self:provider.stage}
-    handler: src.handler.on_connect
+    handler: handler.on_connect
     events:
       - websocket:
           route: $connect
+          authorizer:
+            name: socket-authorizer
+
   on-disconnect-socket:
     name: on-disconnect-socket-${opt:stage, self:provider.stage}
-    handler: src.handler.on_disconnect
+    handler: handler.on_disconnect
     events:
       - websocket:
           route: $disconnect
-  send-message:
-    name: send-message-${opt:stage, self:provider.stage}
-    handler: src.handler.send_message
+
+  socket-authorizer:
+    name: socket-authorizer-${opt:stage, self:provider.stage}
+    handler: authorizer.lambda_handler
+    package:
+      include:
+        - authorizer.py
+      exclude:
+        - handler.py
+    layers:
+      - !Ref PythonRequirementsLambdaLayer
     environment:
-      DOMAIN_NAME: !Ref WebsocketsApi
+      COGNITO_USER_POOL_ID: ${param:cognitoUserPoolId}
       REGION: ${self:provider.region}
-  
+
+custom:
+  pythonRequirements:
+    layer: true

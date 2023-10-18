@@ -6,6 +6,8 @@ frameworkVersion: "3"
 
 useDotenv: true
 
+# TODO this will be where to step function is deployed
+
 provider:
   name: aws
   runtime: python3.11
@@ -27,7 +29,7 @@ provider:
             - "dynamodb:*"
           Resource: "*"
 
-package: 
+package:
   individually: true
   patterns:
     - "!venv/**"
@@ -44,7 +46,7 @@ functions:
     name: video-ai-${opt:stage, self:provider.stage}
     handler: src.handler.handle_message
     events:
-      - httpApi: 
+      - httpApi:
           path: /${opt:stage, self:provider.stage}/ai
           method: POST
           authorizer:
@@ -60,6 +62,6 @@ custom:
       - botocore
     pipCmdExtraArgs:
       - --platform manylinux2014_x86_64
-    
+
   serverless-offline:
     ignoreJWTSignature: true

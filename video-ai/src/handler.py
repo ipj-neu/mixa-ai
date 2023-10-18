@@ -7,29 +7,25 @@ except ImportError:
 import json
 import os
 from typing import Dict, Any, List
-
 import boto3
-from pprint import pprint
+import logging
+from src.media_convert import ToolInput, Input
 
 from langchain.memory.chat_message_histories import DynamoDBChatMessageHistory
 from langchain.memory import ConversationBufferMemory
 from langchain.chat_models import ChatOpenAI
-from langchain.prompts import ChatPromptTemplate, MessagesPlaceholder
-
+from langchain.prompts import MessagesPlaceholder
 from langchain.agents import OpenAIFunctionsAgent
 from langchain.tools import Tool
 from langchain.agents import AgentExecutor
-from langchain.tools.render import format_tool_to_openai_function
-
-import logging
-
-from src.media_convert import ToolInput, Input
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-def handle_message(event, context):
+# TODO rewrite to fit in the step function
+# no longer need to check the table exists
+def handle_message(event: Dict[str, Any], context) -> Dict[str, Any]:
     stage = os.environ.get("STAGE", "dev")
     logger.info(f"Running in stage: {stage}")
 
@@ -99,14 +95,4 @@ def handle_message(event, context):
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
         "body": json.dumps({"message": message}),
-    }
-
-
-def blank_lambda(event: dict[str, any], context) -> dict[str, any]:
-    pprint(event)
-    pprint(context)
-    return {
-        "statusCode": 500,
-        "headers": {"Content-Type": "application/json"},
-        "body": json.dumps({"message": "Not implemented yet"}),
     }

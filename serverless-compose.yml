@@ -1,4 +1,3 @@
-
 services:
   resources:
     path: resources
@@ -18,7 +17,7 @@ services:
     path: auth
     params:
       videosS3Name: ${process-video.videosS3Name}
-      
+
   video-ai:
     path: video-ai
     params:
@@ -31,5 +30,7 @@ services:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
 
-  # socket:
-  #   path: socket
+  socket:
+    path: socket
+    params:
+      cognitoUserPoolId: ${auth.cognitoUserPoolId}
