@@ -1,3 +1,7 @@
+# TODO some of these names are driving me crazy including the name of the project in general
+# at some point should remove all services, refactor names, and redeploy
+#   this will break some services using hardcoded names for other services and resources
+
 services:
   resources:
     path: resources
@@ -35,3 +39,10 @@ services:
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       statusesTableStreamArn: ${resources.statusesTableStreamArn}
+
+  new-message:
+    path: new-message
+    params:
+      cognitoUserPoolId: ${auth.cognitoUserPoolId}
+      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
+      videoAIStateMachineArn: ${video-ai.videoAIStateMachineArn}

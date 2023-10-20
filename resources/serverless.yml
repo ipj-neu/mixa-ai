@@ -75,12 +75,12 @@ resources:
       Properties:
         TableName: ${self:app}-${opt:stage, self:provider.stage}-message-processing-statuses
         AttributeDefinitions:
-          - AttributeName: executionId
+          - AttributeName: sessionId
             AttributeType: S
           - AttributeName: userId
             AttributeType: S
         KeySchema:
-          - AttributeName: executionId
+          - AttributeName: sessionId
             KeyType: HASH
           - AttributeName: userId
             KeyType: RANGE

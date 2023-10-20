@@ -40,17 +40,79 @@ plugins:
   - serverless-python-requirements
   - serverless-dotenv-plugin
   - serverless-prune-plugin
+  - serverless-step-functions
 
 functions:
   video-ai:
     name: video-ai-${opt:stage, self:provider.stage}
-    handler: src.handler.handle_message
-    events:
-      - httpApi:
-          path: /${opt:stage, self:provider.stage}/ai
-          method: POST
-          authorizer:
-            name: cognitoAuthorizer
+    handler: handler.step_function_testing
+    module: src/testing
+
+stepFunctions:
+  stateMachines:
+    videoAIProcess:
+      name: video-state-machine-${opt:stage, self:provider.stage}
+      definition:
+        StartAt: VideoAI
+        States:
+          VideoAI:
+            Type: Task
+            Resource:
+              Fn::GetAtt:
+                - video-ai
+                - Arn
+            Next: HasJobs
+
+          HasJobs:
+            Type: Choice
+            Choices:
+              - Variable: "$.jobs"
+                IsPresent: true
+                Next: StartJobs
+            Default: NoJobs
+
+          NoJobs:
+            Type: Pass
+            End: true
+
+          StartJobs:
+            Type: Map
+            ItemsPath: "$.jobs"
+            ItemProcessor:
+              ProcessorConfig:
+                Mode: INLINE
+
+              StartAt: WhichJob
+              States:
+                WhichJob:
+                  Type: Choice
+                  Choices:
+                    - Variable: "$.type"
+                      StringEquals: "label"
+                      Next: StartLabelDetection
+                    - Variable: "$.type"
+                      StringEquals: "face"
+                      Next: StartFaceDetection
+
+                StartLabelDetection:
+                  Type: Pass
+                  Result:
+                    labelDetectionJobId: "jobId"
+                  End: true
+
+                StartFaceDetection:
+                  Type: Pass
+                  Result:
+                    faceDetectionJobId: "jobId"
+                  End: true
+
+            End: true
+
+resources:
+  Outputs:
+    videoAIStateMachineArn:
+      Value:
+        Ref: VideoDashstateDashmachineDash${opt:stage, self:provider.stage}
 
 custom:
   pythonRequirements:
@@ -60,8 +122,8 @@ custom:
     noDeploy:
       - boto3
       - botocore
-    pipCmdExtraArgs:
-      - --platform manylinux2014_x86_64
+    # pipCmdExtraArgs:
+    #   - --platform manylinux2014_x86_64
 
   serverless-offline:
     ignoreJWTSignature: true

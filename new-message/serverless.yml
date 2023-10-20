@@ -1,0 +1,46 @@
+org: ipj31
+app: video-ai
+service: new-message
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  httpApi:
+    authorizers:
+      cognitoAuthorizer:
+        identitySource: $request.header.Authorization
+        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
+        audience:
+          - ${param:cognitoUserPoolClientId}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+
+plugins:
+  - serverless-offline
+
+functions:
+  handle-message:
+    name: handle-message-${opt:stage, self:provider.stage}
+    handler: handler.handle_message
+    environment:
+      STATE_MACHINE_ARN: ${param:videoAIStateMachineArn}
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/message
+          method: POST
+          authorizer:
+            name: cognitoAuthorizer
+
+custom:
+  serverless-offline:
+    ignoreJWTSignature: true
