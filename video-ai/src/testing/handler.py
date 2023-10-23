@@ -6,6 +6,7 @@ logger.setLevel(logging.INFO)
 
 
 def step_function_testing(event, context):
+    print(event)
     stage = os.environ.get("STAGE", "dev")
     logger.info(f"starting handle_message video-ai-{stage}")
 
@@ -24,13 +25,11 @@ def step_function_testing(event, context):
         "jobs": [
             {
                 "type": "label",
-                "s3Bucket": {"Bucket": "bucket_name", "Name": "file_name"},
-                "notificationChannel": {"RoleArn": "role_arn", "snsTopicArn": "sns_topic_arn"},
+                "videoName": "private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/84c81408-2091-7017-9115-d5882b7deeed/testing_session/Command_Vid.mp4",
             },
             {
-                "type": "video",
-                "s3Bucket": {"Bucket": "bucket_name", "Name": "file_name"},
-                "notificationChannel": {"RoleArn": "role_arn", "snsTopicArn": "sns_topic_arn"},
+                "type": "label",
+                "videoName": "private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/84c81408-2091-7017-9115-d5882b7deeed/testing_session/Lemmings_Jumping_off_Cliffs.mp4",
             },
         ]
     }

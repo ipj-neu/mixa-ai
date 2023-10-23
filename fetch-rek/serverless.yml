@@ -1,0 +1,46 @@
+org: ipj31
+app: video-ai
+service: video-ai
+
+frameworkVersion: "3"
+
+# NOTE this is need to be used in the step function becuase step functions do not support having it output to an SNS topic
+# for some reason
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "s3:GetObject"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "rekognition:StartLabelDetection"
+            - "rekognition:StartFaceDetection"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "iam:PassRole"
+          Resource: "*"
+
+functions:
+  fetch-rek:
+    name: fetch-rek-${opt:stage, self:provider.stage}
+    handler: handler.start_job
+    environment:
+      REKOGNITION_ROLE_ARN: ${param:rekRole}
+      REKOGNITION_TOPIC_ARN: ${param:rekSNSTopic}
+      VIDEO_BUCKET: ${param:videosS3Name}
+
+resources:
+  Outputs:
+    startJobLambdaArn:
+      Value:
+        Fn::GetAtt:
+          - FetchDashrekLambdaFunction
+          - Arn

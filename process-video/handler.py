@@ -21,6 +21,7 @@ def on_new_video(event, context):
     user_id = key.split("/")[-3]
     session_id = key.split("/")[-2]
     video_title = key.split("/")[-1]
+    print(f"key: {key}, user_id: {user_id}, session_id: {session_id}, video_title: {video_title}")
 
     # get the presigned url for the video
     # TODO maybe change expiration time
@@ -50,13 +51,14 @@ def on_new_video(event, context):
     framerate = Decimal(int(framerate[0]) / int(framerate[1]))
 
     # update the table with the metadata
-    metadata = {"framerate": framerate, "width": width, "height": height}
+    video_data = {"metadata": {"framerate": framerate, "width": width, "height": height}}
 
+    # should always be the first time the key video_title is used so will not overwrite
     table.update_item(
         Key={"sessionId": session_id, "userId": user_id},
-        UpdateExpression="SET videos.#video_title.metadata = :data",
+        UpdateExpression="SET videos.#video_title = :data",
         ExpressionAttributeNames={"#video_title": video_title},
-        ExpressionAttributeValues={":data": metadata},
+        ExpressionAttributeValues={":data": video_data},
     )
 
 

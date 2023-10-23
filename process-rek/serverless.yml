@@ -27,7 +27,7 @@ plugins:
 
 functions:
   process:
-    name: ${self:service}-${opt:stage, self:provider.stage}
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-rek
     handler: handler.handler
     events:
       - sqs:

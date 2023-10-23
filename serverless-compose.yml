@@ -22,11 +22,19 @@ services:
     params:
       videosS3Name: ${process-video.videosS3Name}
 
+  fetch-rek:
+    path: fetch-rek
+    params:
+      rekSNSTopic: ${resources.rekSNSTopic}
+      rekRole: ${resources.rekRole}
+      videosS3Name: ${process-video.videosS3Name}
+
   video-ai:
     path: video-ai
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
+      startJobLambdaArn: ${fetch-rek.startJobLambdaArn}
 
   chat-sessions:
     path: chat-sessions
