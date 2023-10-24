@@ -20,6 +20,8 @@ provider:
         - Effect: "Allow"
           Action:
             - "dynamodb:*"
+            - "states:SendTaskSuccess"
+            - "states:SendTaskFailure"
           Resource: "*"
 
 plugins:

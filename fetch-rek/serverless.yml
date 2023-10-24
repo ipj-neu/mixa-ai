@@ -1,11 +1,8 @@
 org: ipj31
 app: video-ai
-service: video-ai
+service: fetch-rek
 
 frameworkVersion: "3"
-
-# NOTE this is need to be used in the step function becuase step functions do not support having it output to an SNS topic
-# for some reason
 
 provider:
   name: aws

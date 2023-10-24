@@ -3,13 +3,17 @@ import os
 
 
 def start_job(event, context):
-    sns_topic_arn = os.environ["REKOGNITION_ROLE_ARN"]
-    role_arn = os.environ["REKOGNITION_TOPIC_ARN"]
+    # TODO need to send an update to the status table here
+    print(event)
+    role_arn = os.environ["REKOGNITION_ROLE_ARN"]
+    sns_topic_arn = os.environ["REKOGNITION_TOPIC_ARN"]
     bucket = os.environ["VIDEO_BUCKET"]
 
-    job_type = event["type"]
-    video_name = event["videoName"]
     task_token = event["taskToken"]
+    job = event["job"]
+
+    job_type = job["type"]
+    video_name = job["videoName"]
 
     job = {
         "JobTag": task_token,

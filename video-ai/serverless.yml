@@ -6,8 +6,6 @@ frameworkVersion: "3"
 
 useDotenv: true
 
-# TODO this will be where to step function is deployed
-
 provider:
   name: aws
   runtime: python3.11
@@ -40,7 +38,6 @@ plugins:
   - serverless-python-requirements
   - serverless-dotenv-plugin
   - serverless-prune-plugin
-  - serverless-step-functions
 
 functions:
   video-ai:
@@ -48,116 +45,13 @@ functions:
     handler: handler.step_function_testing
     module: src/testing
 
-# Seperate step function to another file because it has issues resolving cf functions
-# so pass in the arn as a params
-stepFunctions:
-  stateMachines:
-    videoAIProcess:
-      name: video-state-machine-${opt:stage, self:provider.stage}
-      role:
-        Fn::GetAtt:
-          - StateMachineRole
-          - Arn
-      definition:
-        StartAt: VideoAI
-        States:
-          VideoAI:
-            Type: Task
-            Resource: arn:aws:states:::lambda:invoke
-            Parameters:
-              Parameters:
-                FunctionName: !GetAtt VideoDashaiLambdaFunction.Arn
-                Payload.$: $
-            OutputPath: "$.Payload"
-            Next: HasJobs
-
-          HasJobs:
-            Type: Choice
-            Choices:
-              - Variable: "$.jobs"
-                IsPresent: true
-                Next: UpdateStatusJobs
-            Default: NoJobs
-
-          NoJobs:
-            Type: Pass
-            End: true
-
-          # TODO maybe add what jobs are being processed
-          UpdateStatusJobs:
-            Type: Task
-            Resource: arn:aws:states:::dynamodb:updateItem
-            Parameters:
-              TableName: video-ai-${opt:stage, self:provider.stage}-message-processing-statuses
-              Key:
-                sessionId:
-                  S.$: $$.Execution.Input.sessionId
-                userId:
-                  S.$: $$.Execution.Input.userId
-              UpdateExpression: "SET #st = :status"
-              ExpressionAttributeNames:
-                "#st": "status"
-              ExpressionAttributeValues:
-                ":status":
-                  S: "processing_jobs"
-            ResultPath: null
-            Next: StartJobs
-
-          StartJobs:
-            Type: Map
-            ItemsPath: "$.jobs"
-            ItemProcessor:
-              ProcessorConfig:
-                Mode: INLINE
-
-              StartAt: PassTaskToken
-              States:
-                # TODO add task token when callback is ready
-                PassTaskToken:
-                  Type: Pass
-                  Parameters:
-                    taskToken: "AddTaskTokenHere"
-                  ResultPath: "$"
-                  Next: FetchJob
-
-                FetchJob:
-                  Type: Task
-                  Resource: ${param:startJobLambdaArn}
-                  End: true
-
-            End: true
-
 resources:
-  # NOTE might need this later
-  Resources:
-    StateMachineRole:
-      Type: AWS::IAM::Role
-      Properties:
-        RoleName: video-ai-${opt:stage, self:provider.stage}-state-machine-role
-        AssumeRolePolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - states.amazonaws.com
-              Action:
-                - sts:AssumeRole
-        Policies:
-          - PolicyName: video-ai-${opt:stage, self:provider.stage}-state-machine-policy
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - lambda:InvokeFunction
-                    - dynamodb:UpdateItem
-                  Resource: "*"
-
   Outputs:
-    videoAIStateMachineArn:
+    videoAILambdaArn:
       Value:
-        Ref: VideoDashstateDashmachineDash${opt:stage, self:provider.stage}
+        Fn::GetAtt:
+          - VideoDashaiLambdaFunction
+          - Arn
 
 custom:
   pythonRequirements:
