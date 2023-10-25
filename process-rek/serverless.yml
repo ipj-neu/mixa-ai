@@ -16,10 +16,15 @@ provider:
         - Effect: "Allow"
           Action:
             - "rekognition:GetLabelDetection"
+            - "rekognition:GetFaceDetection"
+            - "rekognition:GetSegmentDetection"
           Resource: "*"
         - Effect: "Allow"
           Action:
             - "dynamodb:*"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
             - "states:SendTaskSuccess"
             - "states:SendTaskFailure"
           Resource: "*"

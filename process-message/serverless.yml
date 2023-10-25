@@ -81,9 +81,32 @@ stepFunctions:
                     Payload:
                       job.$: $
                       taskToken.$: $$.Task.Token
+                  Next: UpdateChatSession
+
+                UpdateChatSession:
+                  Type: Task
+                  Resource: arn:aws:states:::dynamodb:updateItem
+                  Parameters:
+                    TableName: video-ai-${opt:stage, self:provider.stage}-chat-sessions
+                    Key:
+                      sessionId:
+                        S.$: $$.Execution.Input.sessionId
+                      userId:
+                        S.$: $$.Execution.Input.userId
+                    UpdateExpression: "SET videos.#fileName.availableData.#jobType = :jobId"
+                    ExpressionAttributeNames:
+                      "#fileName.$": "$.fileName"
+                      "#jobType.$": "$.jobType"
+                    ExpressionAttributeValues:
+                      ":jobId.$": "$.jobId"
+                  ResultPath: null
                   End: true
 
-            End: true
+            ResultSelector:
+              userId: $$.Execution.Input.userId
+              sessionId: $$.Execution.Input.sessionId
+              origin: fetch_rek
+            Next: VideoAI
 
 resources:
   # Resources:

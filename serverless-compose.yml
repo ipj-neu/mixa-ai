@@ -47,11 +47,11 @@ services:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
 
-  # socket:
-  #   path: socket
-  #   params:
-  #     cognitoUserPoolId: ${auth.cognitoUserPoolId}
-  #     statusesTableStreamArn: ${resources.statusesTableStreamArn}
+  socket:
+    path: socket
+    params:
+      cognitoUserPoolId: ${auth.cognitoUserPoolId}
+      statusesTableStreamArn: ${resources.statusesTableStreamArn}
 
   new-message:
     path: new-message

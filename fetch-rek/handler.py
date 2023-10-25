@@ -25,7 +25,11 @@ def start_job(event, context):
 
     print(f"Starting {job_type} job for {video_name.split('/')[-1]})")
 
-    if job_type == "label":
-        rekognition.start_label_detection(**job)
-    elif job_type == "face":
-        rekognition.start_face_detection(**job)
+    # Use match statement to check job_type
+    match job_type:
+        case "label":
+            rekognition.start_label_detection(**job)
+        case "face":
+            rekognition.start_face_detection(**job)
+        case "segment":
+            rekognition.start_segment_detection(**job, SegmentTypes=["SHOT"])

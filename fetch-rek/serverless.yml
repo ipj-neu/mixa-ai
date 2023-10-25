@@ -19,6 +19,7 @@ provider:
           Action:
             - "rekognition:StartLabelDetection"
             - "rekognition:StartFaceDetection"
+            - "rekognition:StartSegmentDetection"
           Resource: "*"
         - Effect: "Allow"
           Action:

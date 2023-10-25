@@ -24,7 +24,7 @@ def on_new_video(event, context):
     print(f"key: {key}, user_id: {user_id}, session_id: {session_id}, video_title: {video_title}")
 
     # get the presigned url for the video
-    # TODO maybe change expiration time
+    # NOTE maybe change expiration time
     video_url = s3_client.generate_presigned_url("get_object", Params={"Bucket": s3_bucket, "Key": key}, ExpiresIn=300)
 
     # get the framerate, width, and height of the video using ffprobe layer
@@ -51,7 +51,11 @@ def on_new_video(event, context):
     framerate = Decimal(int(framerate[0]) / int(framerate[1]))
 
     # update the table with the metadata
-    video_data = {"metadata": {"framerate": framerate, "width": width, "height": height}}
+    video_data = {
+        "name": key,
+        "availableData": {},
+        "metadata": {"framerate": framerate, "width": width, "height": height},
+    }
 
     # should always be the first time the key video_title is used so will not overwrite
     table.update_item(
