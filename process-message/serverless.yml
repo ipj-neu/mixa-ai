@@ -81,13 +81,13 @@ stepFunctions:
                     Payload:
                       job.$: $
                       taskToken.$: $$.Task.Token
-                  Next: UpdateChatSession
+                  Next: UpdateChatSessionVideos
 
-                UpdateChatSession:
+                UpdateChatSessionVideos:
                   Type: Task
                   Resource: arn:aws:states:::dynamodb:updateItem
                   Parameters:
-                    TableName: video-ai-${opt:stage, self:provider.stage}-chat-sessions
+                    TableName: video-ai-${opt:stage, self:provider.stage}-chat-sessions-videos
                     Key:
                       sessionId:
                         S.$: $$.Execution.Input.sessionId

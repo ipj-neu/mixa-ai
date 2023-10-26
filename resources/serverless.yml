@@ -11,11 +11,40 @@ provider:
 # All resources declared here and shared with other services
 resources:
   Resources:
-    # Table chat sessions includes mesages and videos in a chat session
-    ChatSessions:
+    # Table for the history of each chat session
+    ChatSessionsHistory:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions-history
+        AttributeDefinitions:
+          - AttributeName: sessionId
+            AttributeType: S
+          - AttributeName: userId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: sessionId
+            KeyType: HASH
+          - AttributeName: userId
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # Table for the videos for each chat session
+    ChatSessionVideos:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions-videos
         AttributeDefinitions:
           - AttributeName: sessionId
             AttributeType: S
@@ -69,7 +98,7 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
 
-    # table for step function statuses and streaming to lambda
+    # Table for step function statuses and streaming to lambda
     MessageProcessingStatuses:
       Type: AWS::DynamoDB::Table
       Properties:

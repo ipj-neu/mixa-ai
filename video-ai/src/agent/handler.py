@@ -22,8 +22,32 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 
-# TODO rewrite to fit in the step function
 def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
+    stage = os.environ.get("STAGE", "dev")
+    logger.info(f"starting handle_message video-ai-{stage}")
+
+    # all information should always be there except for maybe the message depending on the origin
+    user_id = event["userId"]
+    session = event["sessionId"]
+    message = event.get("message", None)
+    origin = event["origin"]
+
+    # NOTE better ways to get the table name
+    table_name = f"video-ai-{stage}-chat-sessions"
+
+    if origin == "fetch_rek":
+        session_table = boto3.resource("dynamodb").Table(table_name)
+        response = session_table.update_item(
+            Key={"sessionId": session, "userId": user_id},
+            UpdateExpression="REMOVE History[-1], History[-1]",
+            ReturnValues="UPDATED_OLD",
+        )
+        # sets the message the user sent as the message to be processed before getting the data
+        message = response["Attributes"]["History"][0]
+
+
+# TODO rewrite to fit in the step function
+def video_agent_old(event: Dict[str, Any], context) -> Dict[str, Any]:
     stage = os.environ.get("STAGE", "dev")
     logger.info(f"starting handle_message video-ai-{stage}")
 

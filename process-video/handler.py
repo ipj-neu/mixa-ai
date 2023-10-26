@@ -10,7 +10,7 @@ def on_new_video(event, context):
     stage = os.environ["STAGE"]
 
     # TODO Possibly get the tables from outputs
-    table_name = f"video-ai-{stage}-chat-sessions"
+    table_name = f"video-ai-{stage}-chat-sessions-videos"
     s3_bucket = f"video-ai-videos-{stage}"
 
     table = boto3.resource("dynamodb").Table(table_name)
