@@ -23,7 +23,7 @@ def step_function_testing(event, context):
 
     if origin == "handle_message":
         return {
-            "jobs": [
+            "rekJobs": [
                 {
                     "type": "label",
                     "videoName": "private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/84c81408-2091-7017-9115-d5882b7deeed/testing_session/Command_Vid.mp4",

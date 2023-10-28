@@ -1,0 +1,54 @@
+{
+  "Settings": {
+    "Inputs": [
+      {
+        "TimecodeSource": "ZEROBASED",
+        "AudioSelectors": { "Audio Selector 1": { "DefaultSelection": "DEFAULT" } },
+        "FileInput": "s3://video-ai-videos-dev/private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/84c81408-2091-7017-9115-d5882b7deeed/testing_session/Command_Vid.mp4",
+        "InputClippings": [{ "StartTimecode": "0:0:0:0", "EndTimecode": "0:0:10:0" }]
+      }
+    ],
+    "OutputGroups": [
+      {
+        "Name": "File Group",
+        "OutputGroupSettings": {
+          "Type": "FILE_GROUP_SETTINGS",
+          "FileGroupSettings": {
+            "Destination": "s3://video-ai-videos-dev/private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/84c81408-2091-7017-9115-d5882b7deeed/testing_session/new_video.mp4"
+          }
+        },
+        "Outputs": [
+          {
+            "VideoDescription": {
+              "CodecSettings": {
+                "Codec": "H_264",
+                "H264Settings": {
+                  "RateControlMode": "QVBR",
+                  "SceneChangeDetect": "TRANSITION_DETECTION",
+                  "FramerateControl": "SPECIFIED",
+                  "FramerateNumerator": 30,
+                  "FramerateDenominator": 1,
+                  "ParNumerator": 720,
+                  "ParControl": "SPECIFIED",
+                  "ParDenominator": 480,
+                  "MaxBitrate": 5000000
+                }
+              },
+              "Width": 720,
+              "Height": 480
+            },
+            "AudioDescriptions": [
+              {
+                "CodecSettings": { "Codec": "AAC", "AacSettings": { "Bitrate": 96000, "CodingMode": "CODING_MODE_2_0", "SampleRate": 48000 } },
+                "AudioSourceName": "Audio Selector 1"
+              }
+            ],
+            "ContainerSettings": { "Container": "MP4", "Mp4Settings": {} }
+          }
+        ]
+      }
+    ],
+    "TimecodeConfig": { "Source": "ZEROBASED" }
+  },
+  "Role": "arn:aws:iam::956782569109:role/service-role/MediaConvert_Default_Role"
+}

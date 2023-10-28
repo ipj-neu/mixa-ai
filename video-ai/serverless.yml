@@ -26,6 +26,10 @@ provider:
           Action:
             - "dynamodb:*"
           Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "mediaconvert:*"
+          Resource: "*"
 
 package:
   individually: true
@@ -44,6 +48,8 @@ functions:
     name: video-ai-${opt:stage, self:provider.stage}
     handler: handler.step_function_testing
     module: src/testing
+    environment:
+      MEDIA_CONVERT_ROLE_ARN: ${param:mediaConvertRoleArn}
 
 resources:
   Outputs:

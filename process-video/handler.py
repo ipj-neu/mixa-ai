@@ -36,15 +36,15 @@ def on_new_video(event, context):
         "-select_streams",
         "v:0",
         "-show_entries",
-        "stream=r_frame_rate,width,height",
+        "stream=r_frame_rate,width,height,duration",
         "-of",
         "default=nw=1:nk=1",
         video_url,
     ]
 
     output = subprocess.check_output(cmd, universal_newlines=True)
-    width, height, framerate = output.strip().split("\n")
-    print(f"width: {width}, height: {height}, framerate: {framerate}")
+    width, height, framerate, duration = output.strip().split("\n")
+    print(f"width: {width}, height: {height}, framerate: {framerate}, duration: {duration}")
 
     # convert framerate to a decimal
     framerate = framerate.split("/")
@@ -54,7 +54,7 @@ def on_new_video(event, context):
     video_data = {
         "name": key,
         "availableData": {},
-        "metadata": {"framerate": framerate, "width": width, "height": height},
+        "metadata": {"framerate": framerate, "width": width, "height": height, "duration": duration},
     }
 
     # should always be the first time the key video_title is used so will not overwrite

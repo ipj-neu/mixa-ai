@@ -17,6 +17,11 @@ services:
     params:
       rekSQSQueue: ${resources.rekSQSQueue}
 
+  process-convert:
+    path: process-convert
+    params:
+      mediaConvertSNSArn: ${resources.mediaConvertSNSArn}
+
   auth:
     path: auth
     params:
@@ -34,6 +39,7 @@ services:
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
+      mediaConvertRoleArn: ${auth.mediaConvertRoleArn}
 
   process-message:
     path: process-message

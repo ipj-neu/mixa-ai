@@ -70,7 +70,6 @@ functions:
       - s3:
           bucket: videos
           event: s3:ObjectCreated:*
-
     layers:
       - !Ref FfprobeLambdaLayer
     environment:

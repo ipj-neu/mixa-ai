@@ -1,3 +1,7 @@
+# do i need a chat history for the ai?
+# would it better to make it more like bing dall-e where it's not chat based, instead of trying to emulate gpt
+
+
 # might need to add a way for the user to prefetch the rek data they want
 
 # i feel like i am doing this backwards, i should be making it able to do the rek stuff, i think that is what is cool about this

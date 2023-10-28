@@ -11,7 +11,6 @@ provider:
 # Contains all resources for auth
 resources:
   Resources:
-
     # User pool
     CognitoUserPool:
       Type: AWS::Cognito::UserPool
@@ -33,7 +32,7 @@ resources:
           - ALLOW_REFRESH_TOKEN_AUTH
           - ALLOW_USER_SRP_AUTH
           - ALLOW_CUSTOM_AUTH
-          
+
     # Identity pool
     IdentityPool:
       Type: AWS::Cognito::IdentityPool
@@ -61,14 +60,14 @@ resources:
                 - "sts:AssumeRoleWithWebIdentity"
               Condition:
                 StringEquals:
-                  cognito-identity.amazonaws.com:aud: 
+                  cognito-identity.amazonaws.com:aud:
                     Ref: IdentityPool
                 ForAnyValue:StringLike:
                   cognito-identity.amazonaws.com:amr: authenticated
         Policies:
           - PolicyName: "CognitoS3AccessPolicy"
             PolicyDocument:
-              Version: '2012-10-17'
+              Version: "2012-10-17"
               Statement:
                 - Action:
                     - s3:GetObject
@@ -122,7 +121,7 @@ resources:
                   Resource:
                     - arn:aws:s3:::${param:videosS3Name}
                   Effect: Allow
-                  
+
     # IAM role for unauthenticated users
     UnauthenticatedRole:
       Type: AWS::IAM::Role
@@ -137,14 +136,14 @@ resources:
                 - "sts:AssumeRoleWithWebIdentity"
               Condition:
                 StringEquals:
-                  cognito-identity.amazonaws.com:aud: 
+                  cognito-identity.amazonaws.com:aud:
                     Ref: IdentityPool
                 ForAnyValue:StringLike:
                   cognito-identity.amazonaws.com:amr: unauthenticated
         Policies:
           - PolicyName: "S3Access"
             PolicyDocument:
-              Version: '2012-10-17'
+              Version: "2012-10-17"
               Statement:
                 - Action:
                     - s3:GetObject
@@ -192,6 +191,40 @@ resources:
               - UnauthenticatedRole
               - Arn
 
+    # IAM role for media convert
+    MediaConvertRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        RoleName: "MediaConvertRole"
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - mediaconvert.amazonaws.com
+              Action:
+                - "sts:AssumeRole"
+        Policies:
+          - PolicyName: "MediaConvertS3Access"
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - "s3:PutObject"
+                    - "s3:GetObject"
+                    - "s3:ListBucket"
+                  Resource:
+                    - arn:aws:s3:::${param:videosS3Name}
+                    - arn:aws:s3:::${param:videosS3Name}/*
+                - Effect: Allow
+                  Action:
+                    - "mediaconvert:Describe*"
+                    - "mediaconvert:Get*"
+                    - "mediaconvert:List*"
+                  Resource: "*"
+
   Outputs:
     cognitoUserPoolId:
       Value:
@@ -202,3 +235,8 @@ resources:
     identityPoolId:
       Value:
         Ref: IdentityPool
+    mediaConvertRoleArn:
+      Value:
+        Fn::GetAtt:
+          - MediaConvertRole
+          - Arn

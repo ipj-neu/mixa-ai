@@ -1,0 +1,18 @@
+org: ipj31
+app: video-ai
+service: process-convert
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  region: us-east-1
+  runtime: python3.11
+
+functions:
+  process:
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-convert
+    handler: handler.handler
+    events:
+      - sns:
+          arn: ${param:mediaConvertSNSArn}

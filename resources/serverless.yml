@@ -193,6 +193,45 @@ resources:
                   Resource:
                     - !Ref RekSNSTopic
 
+    # Resources for media convert jobs complete events
+    MediaConvertSNSTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: MediaConvertTopic
+
+    MediaConvertEventBridgeRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: MediaConvertEventBridgeRule
+        Description: "Rule for MediaConvert events"
+        EventPattern:
+          source:
+            - aws.mediaconvert
+          detail-type:
+            - "MediaConvert Job State Change"
+          detail:
+            status:
+              - COMPLETE
+        Targets:
+          - Arn:
+              Ref: MediaConvertSNSTopic
+            Id: MediaConvertSNSTopic
+
+    MediaConvertSNSPolicy:
+      Type: "AWS::SNS::TopicPolicy"
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: sns:Publish
+              Resource:
+                Ref: MediaConvertSNSTopic
+        Topics:
+          - Ref: MediaConvertSNSTopic
+
   Outputs:
     rekRole:
       Value:
@@ -215,3 +254,7 @@ resources:
         Fn::GetAtt:
           - MessageProcessingStatuses
           - StreamArn
+
+    mediaConvertSNSArn:
+      Value:
+        Ref: MediaConvertSNSTopic

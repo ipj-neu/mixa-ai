@@ -35,7 +35,7 @@ stepFunctions:
           HasJobs:
             Type: Choice
             Choices:
-              - Variable: "$.jobs"
+              - Variable: "$.rekJobs"
                 IsPresent: true
                 Next: UpdateStatusJobs
             Default: NoJobs
