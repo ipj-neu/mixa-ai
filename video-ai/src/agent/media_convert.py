@@ -1,9 +1,10 @@
-from langchain.pydantic_v1 import BaseModel, Field, validator
+from langchain.pydantic_v1 import BaseModel, Field
 from typing import Sequence, Dict, Any, Type
 from langchain.tools import BaseTool
-from langchain.callbacks.human import HumanApprovalCallbackHandler
 import boto3
 from decimal import Decimal
+import os
+from enum import Enum
 
 
 class Timecode(BaseModel):
@@ -25,37 +26,45 @@ class Clipping(BaseModel):
     end_time: Timecode = Field(description="The end time of the clipping.")
 
 
-class Input(BaseModel):
-    video_name: str = Field(description="The name of the input video")
-    input_clipping: Clipping = Field(description="The clipping of the input video")
-    use_full_video: bool = Field(default=False, description="If the full video should be used instead of the clipping")
-
-
-class ToolInput(BaseModel):
-    inputs: Sequence[Input] = Field(description="The inputs to the job")
-
-
 class MediaConvertTool(BaseTool):
     name = "edit_video"
-    description = "Tool to edit a video. Can take multiple input videos and/or video clips and put them together."
-    args_schema: Type[BaseModel] = ToolInput
+    description = "Tools to edit a video. Can take multiple input videos and/or video clips and put them together."
+    args_schema: Type[BaseModel]
     videos: Dict[str, Any] = {}
 
     # NOTE for testing
     return_direct = True
 
-    def _run(self, inputs):
-        inputs: Sequence[Input] = [Input(**clipping) for clipping in inputs]
-        incorrect_inputs = []
-        for clipping in inputs:
-            if clipping.video_name not in self.videos:
-                incorrect_inputs.append(clipping.video_name)
-        if incorrect_inputs:
-            self.return_direct = True
-            return {
-                "status": "error",
-                "message": f"Could not find the video(s) {', '.join(incorrect_inputs)}. Make sure the names match one of these {', '.join(list(self.videos.keys()))}",
-            }
+    @classmethod
+    def from_videos(cls, videos: Dict[str, Any]) -> "MediaConvertTool":
+        enum_members = {video.replace(".", "_").upper(): video for video in videos.keys()}
+        available_videos = Enum("AvailableVideos", enum_members)
+        available_videos.__doc__ = "The videos available to edit"
+
+        class Input(BaseModel):
+            video_name: available_videos
+            input_clipping: Clipping = Field(description="The clipping of the input video")
+            use_full_video: bool = Field(
+                default=False, description="If the full video should be used instead of the clipping"
+            )
+
+        class ToolInput(BaseModel):
+            inputs: Sequence[Input] = Field(description="The inputs to the job")
+
+        return cls(videos=videos, args_schema=ToolInput)
+
+    def _run(self, **kwargs):
+        inputs = self.args_schema(**kwargs).inputs
+        # incorrect_inputs = []
+        # for clipping in inputs:
+        #     if clipping.video_name not in self.videos:
+        #         incorrect_inputs.append(clipping.video_name)
+        # if incorrect_inputs:
+        #     self.return_direct = True
+        #     return {
+        #         "status": "error",
+        #         "message": f"Could not find the video(s) {', '.join(incorrect_inputs)}. Make sure the names match one of these {', '.join(list(self.videos.keys()))}",
+        #     }
 
         media_convert_client = boto3.client(
             "mediaconvert", endpoint_url="https://vasjpylpa.mediaconvert.us-east-1.amazonaws.com"
@@ -111,17 +120,17 @@ class MediaConvertTool(BaseTool):
                 "TimecodeConfig": {"Source": "ZEROBASED"},
             },
             # TODO change this to the arn given in the environment variables
-            "Role": "arn:aws:iam::956782569109:role/MediaConvertRole",
+            "Role": os.environ["MEDIA_CONVERT_ROLE_ARN"],
         }
 
         for clipping in inputs:
             input_config = {
                 "TimecodeSource": "ZEROBASED",
                 "AudioSelectors": {"Audio Selector 1": {"DefaultSelection": "NOT_DEFAULT"}},
-                "FileInput": f"s3://video-ai-videos-dev/{self.videos[clipping.video_name]['name']}",
+                "FileInput": f"s3://video-ai-videos-dev/{self.videos[clipping.video_name.value]['name']}",
             }
             if not clipping.use_full_video:
-                frame_rate = self.videos[clipping.video_name]["metadata"]["framerate"]
+                frame_rate = self.videos[clipping.video_name.value]["metadata"]["framerate"]
                 input_config["InputClippings"] = [
                     {
                         "StartTimecode": clipping.input_clipping.start_time.convert_timecode(frame_rate),

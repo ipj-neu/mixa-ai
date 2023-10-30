@@ -66,7 +66,7 @@ stepFunctions:
 
           StartJobs:
             Type: Map
-            ItemsPath: $.jobs
+            ItemsPath: $.rekJobs
             ItemProcessor:
               ProcessorConfig:
                 Mode: INLINE
@@ -103,8 +103,9 @@ stepFunctions:
                   End: true
 
             ResultSelector:
-              userId: $$.Execution.Input.userId
-              sessionId: $$.Execution.Input.sessionId
+              userId.$: $$.Execution.Input.userId
+              sessionId.$: $$.Execution.Input.sessionId
+              message.$: $$.Execution.Input.message
               origin: fetch_rek
             Next: VideoAI
 

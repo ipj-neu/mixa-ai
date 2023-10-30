@@ -28,8 +28,8 @@ def start_job(event, context):
     # Use match statement to check job_type
     match job_type:
         case "label":
-            rekognition.start_label_detection(**job)
+            rekognition.start_label_detection(**job, MinConfidence=75)
         case "face":
             rekognition.start_face_detection(**job)
-        case "segment":
+        case "shot":
             rekognition.start_segment_detection(**job, SegmentTypes=["SHOT"])
