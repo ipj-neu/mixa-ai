@@ -41,7 +41,7 @@ class GetVideoDataTool(BaseTool):
             def validate_data_type(cls, values):
                 data_type = values["data_type_value"]
                 if data_type not in ["face", "shot", "label"]:
-                    raise ToolException("data_type must be 'face', 'shot', or 'label'. Ask me for a correct if needed.")
+                    raise ValueError({"error": "error here", "message": "message for the user here"})
                 return values
 
             @property
@@ -56,6 +56,44 @@ class GetVideoDataTool(BaseTool):
             args_schema=GetVideoDataInput,
         )
 
+    def return_job_requests(self, missing_data):
+        self.return_direct = True
+        return {
+            "rekJobs": [
+                {"type": request.data_type.value, "videoName": self.videos[request.video_name.value]["name"]}
+                for request in missing_data
+            ],
+        }
+
+    def job_paginator(self, job_id, getter, **kwargs):
+        job_request = {"JobId": job_id, **kwargs}
+        while True:
+            response = getter(**job_request)
+            yield response
+            if response.get("NextToken", "") == "":
+                return
+            job_request["NextToken"] = response["NextToken"]
+
+    def get_job_results(self, data_request, rek_client=boto3.client("rekognition")):
+        getter = None
+        formatter = None
+        extra_kwargs = {}
+        match data_request.data_type.value:
+            case "face":
+                getter = rek_client.get_face_detection
+            case "shot":
+                getter = rek_client.get_segment_detection
+            case "label":
+                getter = rek_client.get_label_detection
+                extra_kwargs = {"SortBy": "NAME", "AggregateBy": "SEGMENTS"}
+            case _:
+                raise ToolException("Invalid data type")
+
+        # TODO format data for gpt and return
+        job_id = self.videos[data_request.video_name.value]["availableData"][data_request.data_type.value]
+        for response in self.job_paginator(job_id, getter, **extra_kwargs):
+            print("response")
+
     def _run(self, **kwargs) -> Any:
         args = self.args_schema(**kwargs)
         requests = args.requests
@@ -67,13 +105,11 @@ class GetVideoDataTool(BaseTool):
                 requests,
             )
         )
-        if missing_data:
-            self.return_direct = True
-            return {
-                "rekJobs": [
-                    {"type": request.data_type.value, "videoName": self.videos[request.video_name.value]["name"]}
-                    for request in missing_data
-                ],
-            }
+        if not missing_data:
+            return self.return_job_requests(missing_data)
+
+        rek_client = boto3.client("rekognition")
+        for data_request in requests:
+            self.get_job_results(data_request, rek_client=rek_client)
 
         return {"data": "fake data"}
