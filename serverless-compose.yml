@@ -47,8 +47,8 @@ services:
       startJobLambdaArn: ${fetch-rek.startJobLambdaArn}
       videoAILambdaArn: ${video-ai.videoAILambdaArn}
 
-  chat-sessions:
-    path: chat-sessions
+  edit-sessions:
+    path: edit-sessions
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}

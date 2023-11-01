@@ -1,6 +1,6 @@
 org: ipj31
 app: video-ai
-service: chat-sessions
+service: edit-sessions
 
 provider:
   name: aws
@@ -29,43 +29,44 @@ plugins:
 package:
   individually: true
 
+# TODO add endpoints to remove videos from a session and delete a session
 functions:
   create-chat-session:
-    name: create-chat-sessions-${opt:stage, self:provider.stage}
+    name: create-edit-sessions-${opt:stage, self:provider.stage}
     handler: handle_post.handler
     package:
       include:
         - handle_post.py
     events:
       - httpApi:
-          path: /${opt:stage, self:provider.stage}/chat
+          path: /${opt:stage, self:provider.stage}/session
           method: POST
           authorizer:
             name: cognitoAuthorizer
 
-  delete-chat-session:
-    name: delete-chat-sessions-${opt:stage, self:provider.stage}
-    handler: handle_delete.handler
-    package:
-      include:
-        - handle_delete.py
-    events:
-      - httpApi:
-          path: /${opt:stage, self:provider.stage}/chat/{sessionId}
-          method: DELETE
-          authorizer:
-            name: cognitoAuthorizer
-
   get-conversation:
-    name: get-conversation-${opt:stage, self:provider.stage}
+    name: get-edit-session-${opt:stage, self:provider.stage}
     handler: handle_get.handler
     package:
       include:
         - handle_get.py
     events:
       - httpApi:
-          path: /${opt:stage, self:provider.stage}/chat/{sessionId}
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}
           method: GET
+          authorizer:
+            name: cognitoAuthorizer
+
+  add-video:
+    name: add-video-${opt:stage, self:provider.stage}
+    handler: handle_add_video.handler
+    package:
+      include:
+        - handle_add_video.py
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}/video
+          method: POST
           authorizer:
             name: cognitoAuthorizer
 

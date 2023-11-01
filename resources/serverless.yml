@@ -11,11 +11,11 @@ provider:
 # All resources declared here and shared with other services
 resources:
   Resources:
-    # Table for the history of each chat session
-    ChatSessionsHistory:
+    # Table for the videos for each chat session
+    EditSessions:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions-history
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-edit-session
         AttributeDefinitions:
           - AttributeName: sessionId
             AttributeType: S
@@ -24,8 +24,6 @@ resources:
         KeySchema:
           - AttributeName: sessionId
             KeyType: HASH
-          - AttributeName: userId
-            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: UserIdIndex
             KeySchema:
@@ -40,21 +38,19 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
 
-    # Table for the videos for each chat session
-    ChatSessionVideos:
+    # Table of users videos
+    UserVideos:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions-videos
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-user-videos
         AttributeDefinitions:
-          - AttributeName: sessionId
+          - AttributeName: videoId
             AttributeType: S
           - AttributeName: userId
             AttributeType: S
         KeySchema:
-          - AttributeName: sessionId
+          - AttributeName: videoId
             KeyType: HASH
-          - AttributeName: userId
-            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: UserIdIndex
             KeySchema:
