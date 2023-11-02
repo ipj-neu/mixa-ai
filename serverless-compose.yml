@@ -25,8 +25,8 @@ services:
 
   auth:
     path: auth
-    params:
-      videosS3Name: ${process-video.videosS3Name}
+    # params:
+    #   videosS3Name: ${process-video.videosS3Name}
 
   video-ai:
     path: video-ai

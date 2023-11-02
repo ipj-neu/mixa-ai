@@ -6,23 +6,14 @@ from decimal import Decimal
 from uuid import uuid4
 import json
 
-# TODO this will be rewritten to be used call the step function that processes the videos
-# TODO should also create the pinecone index here
 """
-data needed for the step function:
-    - user id
-    - bucket name
-    - video key
-    - video id
-    - video s3 uri
-"""
-
 SFN_INPUT_TYPE = {
     "userId": "string",
     "videoKey": "string",
     "videoId": "string",
     "videoS3Uri": "string",
 }
+"""
 
 
 def on_new_video(event, context):
@@ -88,7 +79,7 @@ def on_new_video(event, context):
         "userId": user_id,
         "videoKey": key,
         "videoId": video_id,
-        "videoUri": video_url,
+        "videoUri": video_uri,
     }
 
     boto3.client("stepfunctions").start_execution(

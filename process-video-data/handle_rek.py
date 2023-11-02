@@ -10,7 +10,6 @@ def handler(event, context):
     try:
         sf_client = boto3.client("stepfunctions")
 
-        # get the job
         for record in event["Records"]:
             body = json.loads(record["body"])
             message = json.loads(body["Message"])
@@ -28,11 +27,13 @@ def handler(event, context):
             }
 
             if status != "SUCCEEDED":
+                logger.error(f"{job_type} Rekognition job failed: ", job_id)
                 output["errorMessage"] = f"{job_type} Rekognition job failed"
                 sf_client.send_task_failure(taskToken=task_token, error=json.dumps(output))
                 return
 
+            logger.info(f"{job_type} Rekognition job succeeded: ", job_id)
             sf_client.send_task_success(taskToken=task_token, output=json.dumps(output))
 
     except Exception as e:
-        logger.error("Error when processing rekognition job", e, exc_info=True)
+        logger.error("Error when processing rekognition job", exc_info=True)

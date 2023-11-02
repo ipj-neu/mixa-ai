@@ -44,7 +44,7 @@ package:
 # TODO need to add better error handling to rerun when needed
 functions:
   process-rek:
-    name: ${self:app}-${opt:stage, self:provider.stage}-process-rek
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-rek
     handler: handle_rek.handler
     package:
       include:
@@ -54,7 +54,7 @@ functions:
           arn: ${param:rekSQSQueue}
 
   process-transcription:
-    name: ${self:app}-${opt:stage, self:provider.stage}-process-transcription
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-transcription
     handler: handle_transcription.handler
     package:
       include:

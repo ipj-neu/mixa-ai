@@ -53,6 +53,14 @@ provider:
           Action:
             - "iam:PassRole"
           Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "states:StartExecution"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "transcribe:StartTranscriptionJob"
+          Resource: "*"
 
 plugins:
   - serverless-step-functions
@@ -63,6 +71,7 @@ custom:
   pythonRequirements:
     layer: true
     dockerizePip: true
+    dockerImage: python:3.11
 
 layers:
   ffprobe:
@@ -77,7 +86,7 @@ package:
     - "!requirements.txt"
     - "!ffprobe-layer/**"
     - "!on_new_video.py"
-    - "!fetch_rek.py"
+    - "!fetch_data.py"
     - "!embed_video_data.py"
     - "!validate_pinecone_index.py"
 
@@ -99,24 +108,13 @@ functions:
       PROCESS_VIDEO_STATE_MACHINE_ARN:
         Ref: ProcessDashvideoDash${opt:stage, self:provider.stage}
 
-  # TODO figure out when this should happen
-  #   should happen outside the map state
-  validate-pinecone-index:
-    name: ${self:service}-${opt:stage, self:provider.stage}-validate-pinecone-index
-    handler: validate_pinecone_index.handler
-    package:
-      include:
-        - validate_pinecone_index.py
-    layers:
-      - !Ref PythonRequirementsLambdaLayer
-
-  # Starts the Rekognition jobs and set the output to an SNS topic
-  fetch-rek:
+  # Starts the jobs depending on job type
+  fetch-data:
     name: ${self:service}-${opt:stage, self:provider.stage}-fetch-rek
-    handler: fetch_rek.handler
+    handler: fetch_data.handler
     package:
       include:
-        - fetch_rek.py
+        - fetch_data.py
     environment:
       REKOGNITION_TOPIC_ARN: ${param:rekSNSTopic}
       REKOGNITION_ROLE_ARN: ${param:rekRole}
@@ -137,36 +135,24 @@ stepFunctions:
   stateMachines:
     procesVideo:
       name: process-video-${opt:stage, self:provider.stage}
-      role:
-        Fn::GetAtt:
-          - StateMachineRole
-          - Arn
 
       definition:
-        StartAt: ValidatePineconeIndex
+        StartAt: FetchConfig
         States:
-          ValidatePineconeIndex:
-            Type: Task
-            Resource: arn:aws:states:::lambda:invoke
-            Parameters:
-              FunctionName:
-                Fn::GetAtt:
-                  - validate-pinecone-index
-                  - Arn
-              Payload.$: $
-            OutputPath: $.Payload
-            Next: TmpData
-
-          TmpData:
+          # The jobs that will be fetched and processed, static for now
+          # Will let user choose in the future
+          FetchConfig:
             Type: Pass
-            Result:
+            Parameters:
               - jobType:
                   type: rek
                   rekType: label
-                videoKey.$: $$.Execution.Input.videoKey
+                videoKey.$: $.videoKey
+                videoId.$: $.videoId
               - jobType:
                   type: transcribe
-                videoUri.$: $$.Execution.Input.videoUri
+                videoUri.$: $.videoUri
+                videoId.$: $.videoId
             Next: GetDataMap
 
           GetDataMap:
@@ -175,55 +161,20 @@ stepFunctions:
               ProcessorConfig:
                 Mode: INLINE
 
-              StartAt: JobType
+              StartAt: FetchData
               States:
-                JobType:
-                  Type: Choice
-                  Choices:
-                    - Variable: $.jobType.type
-                      StringMatches: transcribe
-                      Next: FetchTranscribe
-                    - Variable: $.jobType.type
-                      StringMatches: rek
-                      Next: FetchRek
-
-                FetchTranscribe:
-                  Type: Task
-                  Resource: arn:aws:states:::aws-sdk:transcribe:startTranscriptionJob.waitForTaskToken
-                  Parameters:
-                    TranscriptionJobName.$: $$.Execution.Input.videoId
-                    LanguageCode: en-US
-                    Media:
-                      MediaFileUri.$: $.videoUri
-                    Tags:
-                      - Key: taskToken
-                        Value.$: $$.Task.Token
-                  Next: EmbedVideoData
-
-                FetchRek:
+                FetchData:
                   Type: Task
                   Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
                   Parameters:
                     FunctionName:
                       Fn::GetAtt:
-                        - fetch-rek
+                        - fetch-data
                         - Arn
                     Payload:
                       job.$: $
                       taskToken.$: $$.Task.Token
-                  Next: IsShot
-
-                IsShot:
-                  Type: Choice
-                  Choices:
-                    - Variable: $.rekType
-                      StringMatches: shot
-                      Next: NoEmbedVideoData
-                  Default: EmbedVideoData
-
-                NoEmbedVideoData:
-                  Type: Pass
-                  End: true
+                  Next: EmbedVideoData
 
                 EmbedVideoData:
                   Type: Task
@@ -233,7 +184,6 @@ stepFunctions:
                       Fn::GetAtt:
                         - embed-video-data
                         - Arn
-                    # TODO payload tbd
                     Payload:
                       job.$: $
                       taskToken.$: $$.Task.Token
@@ -242,33 +192,6 @@ stepFunctions:
             End: true
 
 resources:
-  Resources:
-    StateMachineRole:
-      Type: AWS::IAM::Role
-      Properties:
-        RoleName: process-video-${opt:stage, self:provider.stage}-state-machine-role
-        AssumeRolePolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - states.amazonaws.com
-              Action:
-                - sts:AssumeRole
-        Policies:
-          - PolicyName: process-video-${opt:stage, self:provider.stage}-state-machine-policy
-            PolicyDocument:
-              Version: "2012-10-17"
-              Statement:
-                - Effect: Allow
-                  Action:
-                    - lambda:InvokeFunction
-                    - dynamodb:UpdateItem
-                    - transciption:StartTranscriptionJob
-                    - s3:GetObject
-                  Resource: "*"
-
   Outputs:
     videosS3Name:
       Value:
