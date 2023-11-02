@@ -234,7 +234,9 @@ stepFunctions:
                         - embed-video-data
                         - Arn
                     # TODO payload tbd
-                    Payload.$: $
+                    Payload:
+                      job.$: $
+                      taskToken.$: $$.Task.Token
                   End: true
 
             End: true
