@@ -1,16 +1,34 @@
 import boto3
 from urllib import parse
 import os
-from botocore.exceptions import ClientError
 import subprocess
 from decimal import Decimal
 from uuid import uuid4
+import json
+
+# TODO this will be rewritten to be used call the step function that processes the videos
+# TODO should also create the pinecone index here
+"""
+data needed for the step function:
+    - user id
+    - bucket name
+    - video key
+    - video id
+    - video s3 uri
+"""
+
+SFN_INPUT_TYPE = {
+    "userId": "string",
+    "videoKey": "string",
+    "videoId": "string",
+    "videoS3Uri": "string",
+}
 
 
 def on_new_video(event, context):
     stage = os.environ["STAGE"]
+    sfn_arn = os.environ["PROCESS_VIDEO_STATE_MACHINE_ARN"]
 
-    # TODO Possibly get the tables from outputs
     table_name = f"video-ai-{stage}-user-videos"
     s3_bucket = f"video-ai-videos-{stage}"
 
@@ -21,6 +39,7 @@ def on_new_video(event, context):
     key = parse.unquote_plus(event["Records"][0]["s3"]["object"]["key"])
     user_id = key.split("/")[-2]
     video_title = key.split("/")[-1]
+    video_uri = f"s3://{s3_bucket}/{key}"
     print(f"key: {key}, user_id: {user_id}, video_title: {video_title}")
 
     # get the presigned url for the video
@@ -50,9 +69,11 @@ def on_new_video(event, context):
     framerate = framerate.split("/")
     framerate = Decimal(int(framerate[0]) / int(framerate[1]))
 
+    video_id = str(uuid4())
+
     # update the table with the metadata
     video_data = {
-        "videoId": str(uuid4()),
+        "videoId": video_id,
         "userId": user_id,
         "key": key,
         "availableData": [],
@@ -61,3 +82,16 @@ def on_new_video(event, context):
 
     # should always be the first time the key video_title is used so will not overwrite
     table.put_item(Item=video_data)
+
+    # start the step function
+    sfn_input = {
+        "userId": user_id,
+        "videoKey": key,
+        "videoId": video_id,
+        "videoUri": video_url,
+    }
+
+    boto3.client("stepfunctions").start_execution(
+        stateMachineArn=sfn_arn,
+        input=json.dumps(sfn_input),
+    )

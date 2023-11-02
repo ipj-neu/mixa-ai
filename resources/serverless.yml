@@ -228,6 +228,46 @@ resources:
         Topics:
           - Ref: MediaConvertSNSTopic
 
+    # Resources for transcode jobs complete events
+    TranscriptionSNSTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: TransriptionTopic
+
+    TranscriptionEventBridgeRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: TranscriptionEventBridgeRule
+        Description: "Rule for Transcription events"
+        EventPattern:
+          source:
+            - aws.transcribe
+          detail-type:
+            - "Transcribe Job State Change"
+          detail:
+            TranscriptionJobStatus:
+              - COMPLETED
+              - FAILED
+        Targets:
+          - Arn:
+              Ref: TranscriptionSNSTopic
+            Id: TranscriptionSNSTopic
+
+    TranscriptionSNSPolicy:
+      Type: "AWS::SNS::TopicPolicy"
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: sns:Publish
+              Resource:
+                Ref: TranscriptionSNSTopic
+        Topics:
+          - Ref: TranscriptionSNSTopic
+
   Outputs:
     rekRole:
       Value:
@@ -254,3 +294,7 @@ resources:
     mediaConvertSNSArn:
       Value:
         Ref: MediaConvertSNSTopic
+
+    transcriptionSNSArn:
+      Value:
+        Ref: TranscriptionSNSTopic

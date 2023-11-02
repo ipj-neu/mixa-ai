@@ -12,10 +12,11 @@ services:
       rekSNSTopic: ${resources.rekSNSTopic}
       rekRole: ${resources.rekRole}
 
-  process-rek:
-    path: process-rek
+  process-video-data:
+    path: process-video-data
     params:
       rekSQSQueue: ${resources.rekSQSQueue}
+      transcriptionSNSArn: ${resources.transcriptionSNSArn}
 
   process-convert:
     path: process-convert
@@ -25,13 +26,6 @@ services:
   auth:
     path: auth
     params:
-      videosS3Name: ${process-video.videosS3Name}
-
-  fetch-rek:
-    path: fetch-rek
-    params:
-      rekSNSTopic: ${resources.rekSNSTopic}
-      rekRole: ${resources.rekRole}
       videosS3Name: ${process-video.videosS3Name}
 
   video-ai:
@@ -44,7 +38,7 @@ services:
   process-message:
     path: process-message
     params:
-      startJobLambdaArn: ${fetch-rek.startJobLambdaArn}
+      # startJobLambdaArn: ${fetch-rek.startJobLambdaArn}
       videoAILambdaArn: ${video-ai.videoAILambdaArn}
 
   edit-sessions:
@@ -64,4 +58,4 @@ services:
     params:
       cognitoUserPoolId: ${auth.cognitoUserPoolId}
       cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
-      videoAIStateMachineArn: ${process-message.videoAIStateMachineArn}
+      # videoAIStateMachineArn: ${process-message.videoAIStateMachineArn}
