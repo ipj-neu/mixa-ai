@@ -126,6 +126,7 @@ functions:
   embed-video-data:
     name: ${self:service}-${opt:stage, self:provider.stage}-embed-video-data
     handler: embed_video_data.handler
+    timeout: 900
     package:
       include:
         - embed_video_data.py
@@ -142,8 +143,20 @@ stepFunctions:
           - Arn
 
       definition:
-        StartAt: TmpData
+        StartAt: ValidatePineconeIndex
         States:
+          ValidatePineconeIndex:
+            Type: Task
+            Resource: arn:aws:states:::lambda:invoke
+            Parameters:
+              FunctionName:
+                Fn::GetAtt:
+                  - validate-pinecone-index
+                  - Arn
+              Payload.$: $
+            OutputPath: $.Payload
+            Next: TmpData
+
           TmpData:
             Type: Pass
             Result:

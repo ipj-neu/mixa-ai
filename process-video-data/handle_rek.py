@@ -1,12 +1,9 @@
 import boto3
 import json
-import os
 import logging
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-# TODO change to be used in the new step function
 
 
 def handler(event, context):
@@ -26,14 +23,16 @@ def handler(event, context):
 
             output = {
                 "jobId": job_id,
+                "jobType": "rek",
                 "rekType": job_type,
             }
 
             if status != "SUCCEEDED":
+                output["errorMessage"] = f"{job_type} Rekognition job failed"
                 sf_client.send_task_failure(taskToken=task_token, error=json.dumps(output))
                 return
 
             sf_client.send_task_success(taskToken=task_token, output=json.dumps(output))
 
     except Exception as e:
-        logger.error("Error when processing rekognition job", exc_info=True)
+        logger.error("Error when processing rekognition job", e, exc_info=True)

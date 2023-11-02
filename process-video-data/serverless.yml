@@ -41,6 +41,7 @@ package:
     - "!handler_rek.py"
     - "!handle_transcription.py"
 
+# TODO need to add better error handling to rerun when needed
 functions:
   process-rek:
     name: ${self:app}-${opt:stage, self:provider.stage}-process-rek
