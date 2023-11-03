@@ -26,7 +26,7 @@ METADATA_TYPE = {
 """
 
 MAX_TOTAL_TOKENS = 8191
-EMBEDDING_MODEL = "text-embbeding-ada-002"
+EMBEDDING_MODEL = "text-embedding-ada-002"
 SCREEN_TIME_MIN_MILLIS = 1000
 
 logger = logging.getLogger()
@@ -96,8 +96,8 @@ def process_rek_labels(job_id, video_id):
 
 
 def process_transcribe(job_id, video_id):
-    transcrition_job = boto3.client("transcribe").get_transcription_job(TranscriptionJobName=job_id)
-    uri = transcrition_job["TranscriptionJob"]["Transcript"]["TranscriptFileUri"]
+    transcription_job = boto3.client("transcribe").get_transcription_job(TranscriptionJobName=job_id)
+    uri = transcription_job["TranscriptionJob"]["Transcript"]["TranscriptFileUri"]
     transcript = requests.get(uri).json()
 
     items = transcript["results"]["items"]
@@ -105,12 +105,12 @@ def process_transcribe(job_id, video_id):
     metadata = [[]]
     texts = [[]]
     sentence_metadata = {}
-    sentance = []
+    sentence = []
     current_tokens = 0
     for item in items:
         if item["type"] == "punctuation":
             if item["alternatives"][0]["content"] in [".", "?", "!"]:
-                text = " ".join(sentance)
+                text = " ".join(sentence)
                 tokens = num_tokens(text)
                 if tokens + current_tokens > MAX_TOTAL_TOKENS:
                     metadata.append([])
@@ -128,10 +128,10 @@ def process_transcribe(job_id, video_id):
                 texts[-1].append(text)
 
                 sentence_metadata.clear()
-                sentance.clear()
+                sentence.clear()
                 current_tokens += tokens
         else:
-            sentance.append(item["alternatives"][0]["content"])
+            sentence.append(item["alternatives"][0]["content"])
 
             start_time = int(round(float(item["start_time"]) * 1000))
             end_time = int(round(float(item["end_time"]) * 1000))
@@ -141,7 +141,7 @@ def process_transcribe(job_id, video_id):
 
 
 # Code from the Pinecone docs
-def chunker(iterable, batch=100):
+def chunk(iterable, batch=100):
     it = iter(iterable)
     while True:
         chunk = tuple(itertools.islice(it, batch))
@@ -154,7 +154,7 @@ def handler(event, context):
     logger.info("Starting to embed video data")
 
     pinecone_api_key = os.environ["PINECONE_API_KEY"]
-    pinecone_enviroment = os.environ["PINECONE_ENVIRONMENT"]
+    pinecone_environment = os.environ["PINECONE_ENVIRONMENT"]
 
     task_token = event["taskToken"]
     video_id = event["videoId"]
@@ -167,7 +167,7 @@ def handler(event, context):
         "transcribe": process_transcribe,
     }
 
-    pinecone.init(api_key=pinecone_api_key, environment=pinecone_enviroment)
+    pinecone.init(api_key=pinecone_api_key, environment=pinecone_environment)
     sfn_client = boto3.client("stepfunctions")
 
     try:
@@ -194,7 +194,7 @@ def handler(event, context):
         # Upsert records in parallel
         with pinecone.Index("videos") as index:
             async_responses = [
-                index.upsert(vectors=vector_chunk, async_responses=True) for vector_chunk in chunker(to_upsert)
+                index.upsert(vectors=vector_chunk, async_responses=True) for vector_chunk in chunk(to_upsert)
             ]
 
             [response.get() for response in async_responses]
