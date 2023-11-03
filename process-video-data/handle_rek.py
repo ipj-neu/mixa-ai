@@ -22,8 +22,7 @@ def handler(event, context):
 
             output = {
                 "jobId": job_id,
-                "jobType": "rek",
-                "rekType": job_type,
+                "jobType": job_type,
             }
 
             if status != "SUCCEEDED":

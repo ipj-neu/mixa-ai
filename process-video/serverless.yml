@@ -187,6 +187,7 @@ stepFunctions:
                     Payload:
                       job.$: $
                       taskToken.$: $$.Task.Token
+                      videoId.$: $$.Execution.Input.videoId
                   End: true
 
             End: true
