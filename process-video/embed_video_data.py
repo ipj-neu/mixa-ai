@@ -123,6 +123,8 @@ def process_transcribe(job_id, video_id):
                     "type": "transcribe",
                     **sentence_metadata,
                 }
+                print(text)
+                print(metadata_obj)
 
                 metadata[-1].append(metadata_obj)
                 texts[-1].append(text)
@@ -138,6 +140,8 @@ def process_transcribe(job_id, video_id):
             if "start" not in sentence_metadata:
                 sentence_metadata["start"] = start_time
             sentence_metadata["end"] = end_time
+
+    return texts, metadata
 
 
 # Code from the Pinecone docs
@@ -175,29 +179,32 @@ def handler(event, context):
 
         if "videos" not in pinecone.list_indexes():
             raise Exception("Pinecone index not found")
+        index = pinecone.Index("videos")
 
-        processed_data = processors[job_type](job_id, video_id)
+        batched_text, batched_metadata = processors[job_type](job_id, video_id)
+        print(f"batched_text: {len(batched_text)}, batched_metadata: {len(batched_metadata)}")
 
         to_upsert = []
-        for texts, metadata in processed_data:
+        for texts, metadata in zip(batched_text, batched_metadata):
             # Create embeddings for each text
+            print("creating embeddings...")
             response = openai.Embedding.create(input=texts, model=EMBEDDING_MODEL)
+            print("created embeddings")
             embeddings = [record["embedding"] for record in response["data"]]
+            print(len(embeddings))
 
             # Create ids
             ids = [str(uuid4()) for _ in range(len(texts))]
 
             # Create records
             records = list(zip(ids, embeddings, metadata))
-            to_upsert.append(records)
+            to_upsert.extend(records)
 
         # Upsert records in parallel
-        with pinecone.Index("videos") as index:
-            async_responses = [
-                index.upsert(vectors=vector_chunk, async_responses=True) for vector_chunk in chunk(to_upsert)
-            ]
-
-            [response.get() for response in async_responses]
+        print("starting upsert...")
+        for vectors_chunk in chunk(to_upsert):
+            index.upsert(vectors=vectors_chunk)
+        print("finished upsert")
 
         logger.info(f"Finished processing job: {job_id}")
 
@@ -210,5 +217,5 @@ def handler(event, context):
 
     except Exception as e:
         logger.error(f"Error processing: {job_id}", exc_info=True)
-        error_output = {}
+        error_output = {"error": str(e)}
         sfn_client.send_task_failure(taskToken=task_token, error=json.dumps(error_output))
