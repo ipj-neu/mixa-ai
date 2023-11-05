@@ -12,13 +12,6 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
-  httpApi:
-    authorizers:
-      cognitoAuthorizer:
-        identitySource: $request.header.Authorization
-        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
-        audience:
-          - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
@@ -40,18 +33,17 @@ package:
   patterns:
     - "!venv/**"
     - "!**/__pychache__/**"
+    - "!requirements.txt"
 
 plugins:
   - serverless-offline
   - serverless-python-requirements
   - serverless-dotenv-plugin
-  - serverless-prune-plugin
 
 functions:
   video-ai:
     name: video-ai-${opt:stage, self:provider.stage}
-    handler: handler.video_agent
-    module: src/agent
+    handler: src.handler.video_agent
     timeout: 900
     environment:
       MEDIA_CONVERT_ROLE_ARN: ${param:mediaConvertRoleArn}
@@ -72,6 +64,3 @@ custom:
     noDeploy:
       - boto3
       - botocore
-
-  serverless-offline:
-    ignoreJWTSignature: true

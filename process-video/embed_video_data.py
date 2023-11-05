@@ -70,7 +70,7 @@ def process_rek_labels(job_id, video_id):
         parents = ",".join([parent["Name"] for parent in obj["Parents"]])
         aliases = ",".join([alias["Name"] for alias in obj["Aliases"]])
         categories = ",".join([category["Name"] for category in obj["Categories"]])
-        text = ",".join([name, parents, aliases, categories])
+        text = ",".join([cat for cat in [name, parents, aliases, categories] if cat != ","])
 
         tokens = num_tokens(text)
         if tokens + current_tokens > MAX_TOTAL_TOKENS:
@@ -79,13 +79,11 @@ def process_rek_labels(job_id, video_id):
             current_tokens = 0
 
         metadata_obj = {
-            "metadata": {
-                "video": video_id,
-                "text": text,
-                "type": "label",
-                "start": start_time,
-                "end": end_time,
-            }
+            "video": video_id,
+            "text": text,
+            "type": "label",
+            "start": start_time,
+            "end": end_time,
         }
         metadata[-1].append(metadata_obj)
         texts[-1].append(text)
@@ -191,7 +189,6 @@ def handler(event, context):
             response = openai.Embedding.create(input=texts, model=EMBEDDING_MODEL)
             print("created embeddings")
             embeddings = [record["embedding"] for record in response["data"]]
-            print(len(embeddings))
 
             # Create ids
             ids = [str(uuid4()) for _ in range(len(texts))]
@@ -200,7 +197,7 @@ def handler(event, context):
             records = list(zip(ids, embeddings, metadata))
             to_upsert.extend(records)
 
-        # Upsert records in parallel
+        # Upsert records
         print("starting upsert...")
         for vectors_chunk in chunk(to_upsert):
             index.upsert(vectors=vectors_chunk)
@@ -217,5 +214,5 @@ def handler(event, context):
 
     except Exception as e:
         logger.error(f"Error processing: {job_id}", exc_info=True)
-        error_output = {"error": str(e)}
+        error_output = {"error": f"Error processing {job_type} job: {job_id}"}
         sfn_client.send_task_failure(taskToken=task_token, error=json.dumps(error_output))

@@ -121,6 +121,11 @@ resources:
                   Resource:
                     - arn:aws:s3:::${param:videosS3Name}
                   Effect: Allow
+                - Effect: Allow
+                  Action:
+                    - execute-api:Invoke
+                  Resource:
+                    - arn:aws:execute-api:*:*:*
 
     # IAM role for unauthenticated users
     UnauthenticatedRole:

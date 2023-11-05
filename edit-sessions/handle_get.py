@@ -5,7 +5,7 @@ import json
 
 def handler(event, context):
     stage = os.environ["STAGE"]
-    user_id = event["requestContext"]["authorizer"]["jwt"]["claims"]["sub"]
+    user_id = event["requestContext"]["authorizer"]["iam"]["cognitoIdentity"]["identityId"]
     params = event.get("pathParameters", {})
     if "sessionId" not in params:
         return {"statusCode": 400, "body": "sessionId is required"}

@@ -40,26 +40,15 @@ provider:
         - Effect: "Allow"
           Action:
             - "s3:*"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
             - "dynamodb:*"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
-            - "rekognition:StartLabelDetection"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
             - "iam:PassRole"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
             - "states:StartExecution"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
+            - "states:SendTaskSuccess"
+            - "states:SendTaskFailure"
+            - "rekognition:StartLabelDetection"
+            - "rekognition:GetLabelDetection"
             - "transcribe:StartTranscriptionJob"
+            - "transcribe:GetTranscriptionJob"
           Resource: "*"
 
 plugins:

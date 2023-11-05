@@ -8,13 +8,13 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
-  httpApi:
-    authorizers:
-      cognitoAuthorizer:
-        identitySource: $request.header.Authorization
-        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
-        audience:
-          - ${param:cognitoUserPoolClientId}
+  # httpApi:
+  #   authorizers:
+  #     cognitoAuthorizer:
+  #       identitySource: $request.header.Authorization
+  #       issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
+  #       audience:
+  #         - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
@@ -42,7 +42,7 @@ functions:
           path: /${opt:stage, self:provider.stage}/session
           method: POST
           authorizer:
-            name: cognitoAuthorizer
+            type: aws_iam
 
   get-conversation:
     name: get-edit-session-${opt:stage, self:provider.stage}
@@ -55,7 +55,7 @@ functions:
           path: /${opt:stage, self:provider.stage}/session/{sessionId}
           method: GET
           authorizer:
-            name: cognitoAuthorizer
+            type: aws_iam
 
   add-video:
     name: add-video-${opt:stage, self:provider.stage}
@@ -68,7 +68,17 @@ functions:
           path: /${opt:stage, self:provider.stage}/session/{sessionId}/video
           method: POST
           authorizer:
-            name: cognitoAuthorizer
+            type: aws_iam
+
+  ping:
+    name: ping-${opt:stage, self:provider.stage}
+    handler: testing.testing
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/ping
+          method: POST
+          authorizer:
+            type: aws_iam
 
 custom:
   serverless-offline:

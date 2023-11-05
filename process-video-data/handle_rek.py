@@ -31,7 +31,7 @@ def handler(event, context):
                 sf_client.send_task_failure(taskToken=task_token, error=json.dumps(output))
                 return
 
-            logger.info(f"{job_type} Rekognition job succeeded: ", job_id)
+            logger.info(f"{job_type} Rekognition job succeeded: {job_id}")
             sf_client.send_task_success(taskToken=task_token, output=json.dumps(output))
 
     except Exception as e:

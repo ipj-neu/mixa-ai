@@ -31,7 +31,7 @@ def handler(event, context):
                 sfn_client.send_task_failure(taskToken=task_token, error=json.dumps(output))
                 return
 
-            logger.info("Transcription job succeeded: ", job_id)
+            logger.info(f"Transcription job succeeded: {job_id}")
             sfn_client.send_task_success(taskToken=task_token, output=json.dumps(output))
     except Exception as e:
         logger.error("Error when processing transcription job", exc_info=True)
