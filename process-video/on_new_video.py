@@ -60,9 +60,12 @@ def on_new_video(event, context):
         width, height, framerate, duration = output.strip().split("\n")
         print(f"width: {width}, height: {height}, framerate: {framerate}, duration: {duration}")
 
-        # convert framerate to a decimal
+        # convert to a ints and decimals
         framerate = framerate.split("/")
         framerate = Decimal(int(framerate[0]) / int(framerate[1]))
+        duration = Decimal(duration)
+        width = int(width)
+        height = int(height)
 
         video_id = str(uuid4())
 

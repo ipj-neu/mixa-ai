@@ -45,16 +45,10 @@ functions:
     name: video-ai-${opt:stage, self:provider.stage}
     handler: src.handler.video_agent
     timeout: 900
-    environment:
-      MEDIA_CONVERT_ROLE_ARN: ${param:mediaConvertRoleArn}
-
-resources:
-  Outputs:
-    videoAILambdaArn:
-      Value:
-        Fn::GetAtt:
-          - VideoDashaiLambdaFunction
-          - Arn
+    events:
+      - sqs:
+          arn: ${param:agentQueueArn}
+          batchSize: 1
 
 custom:
   pythonRequirements:

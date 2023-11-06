@@ -10,20 +10,17 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
-  httpApi:
-    authorizers:
-      cognitoAuthorizer:
-        identitySource: $request.header.Authorization
-        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
-        audience:
-          - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
-        - Effect: "Allow"
+        - Effect: Allow
           Action:
             - "dynamodb:*"
           Resource: "*"
+        - Effect: Allow
+          Action:
+            - "sqs:SendMessage"
+          Resource: ${param:agentQueueArn}
 
 plugins:
   - serverless-offline
@@ -33,13 +30,13 @@ functions:
     name: handle-message-${opt:stage, self:provider.stage}
     handler: handler.handle_message
     environment:
-      STATE_MACHINE_ARN: ${param:videoAIStateMachineArn}
+      AGENT_QUEUE_URL: ${param:agentQueueUrl}
     events:
       - httpApi:
           path: /${opt:stage, self:provider.stage}/message
           method: POST
           authorizer:
-            name: cognitoAuthorizer
+            type: aws_iam
 
 custom:
   serverless-offline:
