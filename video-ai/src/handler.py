@@ -15,12 +15,13 @@ from langchain.prompts.chat import (
     SystemMessagePromptTemplate,
 )
 from langchain.agents import OpenAIFunctionsAgent
-from langchain.tools.render import format_tool_to_openai_function
 from langchain.agents import AgentExecutor
 
-from src.get_data import VideoDataRetrievalTool
+# from src.get_data import VideoDataRetrievalTool
+# from src.create_edit import SuggestEditTool
 
-# from get_data import VideoDataRetrievalTool
+from get_data import VideoDataRetrievalTool
+from create_edit import SuggestEditTool
 
 
 logger = logging.getLogger()
@@ -59,7 +60,8 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
         llm = ChatOpenAI(model="gpt-3.5-turbo-0613")
 
         video_data_retrieval_tool = VideoDataRetrievalTool.from_videos(videos)
-        tools = [video_data_retrieval_tool]
+        suggest_edit_tool = SuggestEditTool.from_session(session)
+        tools = [video_data_retrieval_tool, suggest_edit_tool]
 
         system_prompt = SystemMessagePromptTemplate.from_template(SYSTEM_PROMPT)
 
@@ -86,6 +88,7 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
 
 #     load_dotenv()
 #     openai.api_key = os.environ["OPENAI_API_KEY"]
+#     os.environ["STAGE"] = "dev"
 #     event = {
 #         "Records": [
 #             {

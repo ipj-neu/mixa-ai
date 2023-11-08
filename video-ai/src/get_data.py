@@ -1,8 +1,6 @@
 from langchain.pydantic_v1 import BaseModel, Field
-from typing import Sequence, Dict, Any, Type
+from typing import Dict, Any, Type
 from langchain.tools import BaseTool
-import boto3
-from decimal import Decimal
 import os
 from langchain.vectorstores.pinecone import Pinecone
 from langchain.embeddings.openai import OpenAIEmbeddings
@@ -43,7 +41,7 @@ class VideoDataRetrievalTool(BaseTool):
             "video": {"$in": list(self.videos.keys())},
         }
 
-        results = self.store.similarity_search(query, k=30, filter=metadata_filer)
+        results = self.store.similarity_search(query, k=50, filter=metadata_filer)
 
         # Format the results to be easily readable by the AI
         results = "\n".join(

@@ -70,7 +70,7 @@ def process_rek_labels(job_id, video_id):
         parents = ",".join([parent["Name"] for parent in obj["Parents"]])
         aliases = ",".join([alias["Name"] for alias in obj["Aliases"]])
         categories = ",".join([category["Name"] for category in obj["Categories"]])
-        text = ",".join([cat for cat in [name, parents, aliases, categories] if cat != ","])
+        text = ",".join([cat for cat in [name, parents, aliases, categories] if cat != ""])
 
         tokens = num_tokens(text)
         if tokens + current_tokens > MAX_TOTAL_TOKENS:

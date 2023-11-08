@@ -4,7 +4,6 @@ import json
 
 
 def handler(event, context):
-    # TODO maybe add validation that the user has access to the session and the video exists
     stage = os.environ["STAGE"]
     user_id = event["requestContext"]["authorizer"]["iam"]["cognitoIdentity"]["identityId"]
     params = event.get("pathParameters", {})

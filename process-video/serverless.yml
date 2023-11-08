@@ -78,6 +78,7 @@ package:
     - "!fetch_data.py"
     - "!embed_video_data.py"
     - "!validate_pinecone_index.py"
+    - "!delete_video.py"
 
 functions:
   # Processes video when uploaded to S3
@@ -117,6 +118,24 @@ functions:
     package:
       include:
         - embed_video_data.py
+    layers:
+      - !Ref PythonRequirementsLambdaLayer
+
+  # Delete a video
+  delete-video:
+    name: ${self:service}-${opt:stage, self:provider.stage}-delete-video
+    handler: delete_video.handler
+    package:
+      include:
+        - delete_video.py
+    environment:
+      VIDEO_BUCKET: ${self:provider.s3.videos.name}
+    events:
+      - httpApi:
+          path: /video/{videoId}
+          method: delete
+          authorizer:
+            type: aws_iam
     layers:
       - !Ref PythonRequirementsLambdaLayer
 
