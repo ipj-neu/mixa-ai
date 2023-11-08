@@ -44,6 +44,19 @@ functions:
           authorizer:
             type: aws_iam
 
+  delete-edit-session:
+    name: delete-edit-session-${opt:stage, self:provider.stage}
+    handler: handle_delete.handler
+    package:
+      include:
+        - handle_delete.py
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}
+          method: DELETE
+          authorizer:
+            type: aws_iam
+
   get-conversation:
     name: get-edit-session-${opt:stage, self:provider.stage}
     handler: handle_get.handler

@@ -1,6 +1,13 @@
 import boto3
 import os
 import json
+from decimal import Decimal
+
+
+def converter(o):
+    if isinstance(o, Decimal):
+        return float(o)
+    raise TypeError(f"Object of type {o.__class__.__name__} is not JSON serializable")
 
 
 def handler(event, context):
@@ -18,9 +25,15 @@ def handler(event, context):
 
     if result["Item"]["userId"] != user_id:
         return {"statusCode": 403, "body": "User does not have access to this session"}
+    edit_session = result["Item"]
+
+    if edit_session["currentEdit"]:
+        edit_session["currentEdit"] = edit_session["currentEdit"][-1]
+    del edit_session["userId"]
+    del edit_session["sessionId"]
 
     return {
         "statusCode": 200,
         "headers": {"Content-Type": "application/json"},
-        "body": json.dumps(result["Item"]),
+        "body": json.dumps(result["Item"], default=converter),
     }
