@@ -215,6 +215,34 @@ stepFunctions:
                       videoId.$: $$.Execution.Input.videoId
                   End: true
 
+            Next: UpdateVideoStatus
+
+          UpdateVideoStatus:
+            Type: Task
+            Resource: arn:aws:states:::dynamodb:updateItem
+            Parameters:
+              TableName: ${self:app}-${opt:stage, self:provider.stage}-user-videos
+              Key:
+                videoId:
+                  S.$: $$.Execution.Input.videoId
+              UpdateExpression: "SET #status = :status"
+              ExpressionAttributeNames:
+                "#status": "status"
+              ExpressionAttributeValues:
+                ":status":
+                  S: "COMPLETE"
+            Next: NotifyUser
+
+          NotifyUser:
+            Type: Task
+            Resource: arn:aws:states:::sns:publish
+            Parameters:
+              TopicArn: ${param:sendMessagesTopicArn}
+              Message:
+                userId.$: $$.Execution.Input.userId
+                message:
+                  action: "videoProcessingComplete"
+                  videoId.$: $$.Execution.Input.videoId
             End: true
 
 resources:

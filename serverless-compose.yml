@@ -6,6 +6,9 @@ services:
   resources:
     path: resources
 
+  socket:
+    path: socket
+
   edit-sessions:
     path: edit-sessions
 
@@ -14,6 +17,7 @@ services:
     params:
       rekSNSTopic: ${resources.rekSNSTopic}
       rekRole: ${resources.rekRole}
+      sendMessagesTopicArn: ${socket.sendMessagesTopicArn}
 
   auth:
     path: auth
@@ -41,6 +45,3 @@ services:
     params:
       agentQueueArn: ${resources.agentQueueArn}
       agentQueueUrl: ${resources.agentQueueUrl}
-
-  socket:
-    path: socket

@@ -75,7 +75,7 @@ def on_new_video(event, context):
                 "videoId": video_id,
                 "userId": user_id,
                 "key": key,
-                "availableData": [],
+                "status": "PROCESSING",
                 "metadata": {"framerate": framerate, "width": width, "height": height, "duration": duration},
             }
 

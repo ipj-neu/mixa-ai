@@ -79,7 +79,7 @@ functions:
 
   notify-user:
     name: notify-user-${opt:stage, self:provider.stage}
-    handler: notify-user.handler
+    handler: notify_user.handler
     package:
       include:
         - notify_user.py
@@ -88,3 +88,9 @@ functions:
     environment:
       DOMAIN: !Ref WebsocketsApi
       REGION: ${self:provider.region}
+
+resources:
+  Outputs:
+    sendMessagesTopicArn:
+      Value:
+        Ref: SNSTopicVideoaidevsendmessage
