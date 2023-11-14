@@ -17,25 +17,28 @@ from langchain.prompts.chat import (
 from langchain.agents import OpenAIFunctionsAgent
 from langchain.agents import AgentExecutor
 
-# from src.get_data import VideoDataRetrievalTool
-# from src.create_edit import SuggestEditTool
+from src.get_data import VideoDataRetrievalTool
+from src.suggest_edit import SuggestEditTool
 
-from get_data import VideoDataRetrievalTool
-from create_edit import SuggestEditTool
+# from get_data import VideoDataRetrievalTool
+# from suggest_edit import SuggestEditTool
 
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
+MODEL = "gpt-4-0613"
 
 SYSTEM_PROMPT = """
-You are a helpful AI assistant that is amazing at editing videos. You can edit videos according to the users requests.
+You are a helpful AI that is amazing at editing videos. You can edit videos according to the users requests.
 You can create themed videos by searching for data that is relevant to the users request.
 You can retrieve data about the video. 
     The query is the data that would be relevant to the users request.
     The data is either 'label' data which is the object in the time segments, or 'transcript' data which is the transcript of the segments.
-You can also edit the video according to the data and users requests.
+You can also suggest edits the video according to the data and users requests.
     When editing the video you should only refer to the video by the 'video_name'.
+    Always use the 'video_name' to refer to the video.
+    Always suggest edits when done analyzing the data.
 """
 
 
@@ -57,7 +60,7 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
         logger.info(f"videos: {videos}")
         logger.info(f"message: {message}")
 
-        llm = ChatOpenAI(model="gpt-3.5-turbo-0613")
+        llm = ChatOpenAI(model=MODEL)
 
         video_data_retrieval_tool = VideoDataRetrievalTool.from_videos(videos)
         suggest_edit_tool = SuggestEditTool.from_session(session)
@@ -97,15 +100,15 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
 #                         "message": "give me your edit suggestion with timestamps for a video highlighting the animals in the video",
 #                         "session": {
 #                             "userId": "us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441",
-#                             "sessionId": "ce770e21-8bbe-489e-97ea-caf6b59e857b",
+#                             "sessionId": "952f57ba-c6f6-4916-80de-7ff94d7d91fe",
 #                             "videos": {
-#                                 "8645e6e8-47d3-4680-b183-044ae157e5b1": {
-#                                     "name": "Lemmings_Jumping_off_Cliffs.mp4",
-#                                     "key": "private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/user-videos/Lemmings_Jumping_off_Cliffs.mp4",
+#                                 "71cd3193-d155-49f0-8d58-eb11612f055d": {
+#                                     "name": "Travel_Video.mp4",
+#                                     "key": "private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/user-videos/Travel_Video.mp4",
 #                                     "metadata": {
-#                                         "duration": "49.733333",
 #                                         "width": "1280",
-#                                         "framerate": "30",
+#                                         "duration": "134.467667",
+#                                         "framerate": "24",
 #                                         "height": "720",
 #                                     },
 #                                 }

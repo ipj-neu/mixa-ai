@@ -46,6 +46,7 @@ resources:
                 - CognitoUserPool
                 - ProviderName
 
+    # Parts of the roles for the identity pool were taken from the amplify docs
     # IAM role for authenticated users
     AuthenticatedRole:
       Type: AWS::IAM::Role
@@ -65,6 +66,15 @@ resources:
                 ForAnyValue:StringLike:
                   cognito-identity.amazonaws.com:amr: authenticated
         Policies:
+          - PolicyName: GatewayAccessPolicy
+            PolicyDocument:
+              Version: "2012-10-17"
+              Statement:
+                - Effect: Allow
+                  Action:
+                    - execute-api:Invoke
+                  Resource:
+                    - arn:aws:execute-api:*:*:*
           - PolicyName: "CognitoS3AccessPolicy"
             PolicyDocument:
               Version: "2012-10-17"
@@ -121,11 +131,6 @@ resources:
                   Resource:
                     - arn:aws:s3:::${param:videosS3Name}
                   Effect: Allow
-                - Effect: Allow
-                  Action:
-                    - execute-api:Invoke
-                  Resource:
-                    - arn:aws:execute-api:*:*:*
 
     # IAM role for unauthenticated users
     UnauthenticatedRole:

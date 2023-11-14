@@ -8,19 +8,14 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
-  # httpApi:
-  #   authorizers:
-  #     cognitoAuthorizer:
-  #       identitySource: $request.header.Authorization
-  #       issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
-  #       audience:
-  #         - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
         - Effect: "Allow"
           Action:
             - "dynamodb:*"
+            - "mediaconvert:*"
+            - "iam:PassRole"
           Resource: "*"
 
 plugins:
@@ -29,7 +24,6 @@ plugins:
 package:
   individually: true
 
-# TODO add endpoints to remove videos from a session and delete a session
 functions:
   create-chat-session:
     name: create-edit-sessions-${opt:stage, self:provider.stage}
@@ -79,6 +73,19 @@ functions:
     events:
       - httpApi:
           path: /${opt:stage, self:provider.stage}/session/{sessionId}/video
+          method: POST
+          authorizer:
+            type: aws_iam
+
+  convert-edit:
+    name: convert-edit-${opt:stage, self:provider.stage}
+    handler: handle_convert.handler
+    package:
+      include:
+        - handle_convert.py
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}/convert
           method: POST
           authorizer:
             type: aws_iam

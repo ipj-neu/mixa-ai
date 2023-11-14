@@ -25,7 +25,7 @@ class SuggestEditInput(BaseModel):
 
 class SuggestEditTool(BaseTool):
     name = "suggest_edit"
-    description = "Suggest an edit to the video."
+    description = "Suggest an of the video to the user. Always suggest edits when done analyzing the data."
     args_schema: Type[BaseModel] = SuggestEditInput
     session: Dict[str, Any] = {}
 
