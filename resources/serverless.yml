@@ -69,7 +69,7 @@ resources:
     Connections:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-connections
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-user-connections
         AttributeDefinitions:
           - AttributeName: connectionId
             AttributeType: S
@@ -78,8 +78,6 @@ resources:
         KeySchema:
           - AttributeName: connectionId
             KeyType: HASH
-          - AttributeName: userId
-            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: UserIdIndex
             KeySchema:
@@ -259,6 +257,24 @@ resources:
       Properties:
         QueueName: AgentQueue
         VisibilityTimeout: 900
+
+    # Table for WebSocket preflight temp passwords
+    WebSocketPreflightTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-websocket-preflight
+        AttributeDefinitions:
+          - AttributeName: tempPassword
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tempPassword
+            KeyType: HASH
+        TimeToLiveSpecification:
+          Enabled: true
+          AttributeName: ttl
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
 
   Outputs:
     rekRole:

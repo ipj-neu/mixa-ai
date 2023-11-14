@@ -42,8 +42,5 @@ services:
       agentQueueArn: ${resources.agentQueueArn}
       agentQueueUrl: ${resources.agentQueueUrl}
 
-  # socket:
-  #   path: socket
-  #   params:
-  #     cognitoUserPoolId: ${auth.cognitoUserPoolId}
-  #     statusesTableStreamArn: ${resources.statusesTableStreamArn}
+  socket:
+    path: socket
