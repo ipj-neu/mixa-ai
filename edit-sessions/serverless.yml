@@ -27,6 +27,16 @@ package:
   individually: true
 
 functions:
+  get-user-sessions:
+    name: get-user-sessions-${opt:stage, self:provider.stage}
+    handler: handle_get_user_sessions.handler
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/sessions
+          method: GET
+          authorizer:
+            type: aws_iam
+
   create-chat-session:
     name: create-edit-sessions-${opt:stage, self:provider.stage}
     handler: handle_post.handler
@@ -88,6 +98,16 @@ functions:
     events:
       - httpApi:
           path: /${opt:stage, self:provider.stage}/session/{sessionId}/convert
+          method: POST
+          authorizer:
+            type: aws_iam
+
+  save-edit:
+    name: save-edit-${opt:stage, self:provider.stage}
+    handler: handle_save.handler
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}/save
           method: POST
           authorizer:
             type: aws_iam
