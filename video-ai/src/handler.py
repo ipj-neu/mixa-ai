@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Tuple
 import boto3
 import logging
 import json
+import sys
 
 from langchain.chat_models import ChatOpenAI
 from langchain.prompts.chat import (
@@ -46,6 +47,7 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
     # HACK try is here temporarily to stop retrying on error for now
     try:
         stage = os.environ.get("STAGE", "dev")
+        messages_topic_arn = os.environ.get("MESSAGES_TOPIC_ARN")
 
         # NOTE will always be one record
         record = event["Records"][0]
@@ -57,8 +59,6 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
         videos = session["videos"]
 
         logger.info(f"starting handle_message video-ai-{stage}, session: {session_id}, user_id: {user_id}")
-        logger.info(f"videos: {videos}")
-        logger.info(f"message: {message}")
 
         llm = ChatOpenAI(model=MODEL)
 
@@ -79,6 +79,22 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
         output = executor.run({"input": message})
         print(output)
         logger.info(f"agent final output: {output}")
+
+        messages_sns = boto3.client("sns")
+        messages_sns.publish(
+            TopicArn=messages_topic_arn,
+            Message=json.dumps(
+                {
+                    "userId": user_id,
+                    "message": {
+                        "action": "agentCompleted",
+                        "sessionId": session_id,
+                        "output": output,
+                    },
+                }
+            ),
+        )
+
         return output
     except Exception as e:
         print(e)

@@ -39,6 +39,7 @@ services:
     path: video-ai
     params:
       agentQueueArn: ${resources.agentQueueArn}
+      sendMessagesTopicArn: ${socket.sendMessagesTopicArn}
 
   new-message:
     path: new-message

@@ -26,6 +26,7 @@ provider:
         - Effect: "Allow"
           Action:
             - "iam:PassRole"
+            - "sns:Publish"
           Resource: "*"
 
 package:
@@ -49,11 +50,12 @@ functions:
       - sqs:
           arn: ${param:agentQueueArn}
           batchSize: 1
+    environment:
+      MESSAGES_TOPIC_ARN: ${param:sendMessagesTopicArn}
 
 custom:
   pythonRequirements:
     zip: true
-    slim: true
     dockerizePip: true
     noDeploy:
       - boto3
