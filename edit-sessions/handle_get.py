@@ -30,7 +30,6 @@ def handler(event, context):
     if edit_session["currentEdit"]:
         edit_session["currentEdit"] = edit_session["currentEdit"][-1]
     del edit_session["userId"]
-    del edit_session["sessionId"]
 
     return {
         "statusCode": 200,

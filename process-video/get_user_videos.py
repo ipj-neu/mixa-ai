@@ -28,8 +28,8 @@ def handler(event, handler):
     videos = result["Items"]
 
     for video in videos:
+        video["name"] = video["key"].split("/")[-1]
         del video["userId"]
-        del video["metadata"]
 
     return {
         "statusCode": 200,

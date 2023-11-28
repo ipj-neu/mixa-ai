@@ -48,11 +48,12 @@ def handler(event, context):
         edit_session_table.update_item(
             Key={"sessionId": session_id},
             UpdateExpression="SET currentEdit = list_append(if_not_exists(currentEdit, :empty_list), :edit)",
-            ExpressionAttributeValues={
-                ":edit": edit,
-                ":empty_list": [],
-            },
             ConditionExpression="userId = :userId",
+            ExpressionAttributeValues={
+                ":edit": [edit],
+                ":empty_list": [],
+                ":userId": user_id,
+            },
         )
     except ClientError as e:
         if e.response["Error"]["Code"] == "ConditionalCheckFailedException":
