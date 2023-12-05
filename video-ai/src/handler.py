@@ -40,6 +40,10 @@ You can also suggest edits the video according to the data and users requests.
     When editing the video you should only refer to the video by the 'video_name'.
     Always use the 'video_name' to refer to the video.
     Always suggest edits when done analyzing the data.
+
+You should always preform the following steps:
+    1. Retrieve the data from the video according to the users request.
+    2. Suggest edits to the video according to the data and users request.
 """
 
 
@@ -93,6 +97,16 @@ def video_agent(event: Dict[str, Any], context) -> Dict[str, Any]:
                     },
                 }
             ),
+        )
+
+        edit_session_table_name = f"video-ai-{stage}-edit-session"
+        edit_session_table = boto3.resource("dynamodb").Table(edit_session_table_name)
+
+        edit_session_table.update_item(
+            Key={"sessionId": session_id},
+            UpdateExpression="SET #st = :processing_val",
+            ExpressionAttributeNames={"#st": "status"},
+            ExpressionAttributeValues={":processing_val": "IDLE"},
         )
 
         return output

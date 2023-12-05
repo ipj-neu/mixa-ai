@@ -1,0 +1,41 @@
+{
+  "version": "0",
+  "id": "0e18ae79-5399-8c8e-bee4-a6d0c5c9b34c",
+  "detail-type": "MediaConvert Job State Change",
+  "source": "aws.mediaconvert",
+  "account": "956782569109",
+  "time": "2023-12-03T05:56:55Z",
+  "region": "us-east-1",
+  "resources": ["arn:aws:mediaconvert:us-east-1:956782569109:jobs/1701582992216-zh1qbh"],
+  "detail": {
+    "timestamp": 1701583015385,
+    "accountId": "956782569109",
+    "queue": "arn:aws:mediaconvert:us-east-1:956782569109:queues/Default",
+    "jobId": "1701582992216-zh1qbh",
+    "status": "COMPLETE",
+    "userMetadata": {},
+    "outputGroupDetails": [
+      {
+        "outputDetails": [
+          {
+            "outputFilePaths": ["s3://video-ai-videos-dev/private/us-east-1:d0ac9c0c-bd51-4d08-a72c-28cc64993441/1ce46330-16c8-4eb6-a817-406f4a696cf3.mp4"],
+            "durationInMs": 103300,
+            "videoDetails": {
+              "widthInPx": 720,
+              "heightInPx": 480,
+              "averageBitrate": 2547412,
+              "qvbrAvgQuality": 9.99,
+              "qvbrMinQuality": 9.0,
+              "qvbrMaxQuality": 10.0,
+              "qvbrMinQualityLocation": 93333,
+              "qvbrMaxQualityLocation": 0
+            }
+          }
+        ],
+        "type": "FILE_GROUP"
+      }
+    ],
+    "paddingInserted": 0,
+    "blackVideoDetected": 0
+  }
+}

@@ -113,4 +113,11 @@ def handler(event, context):
 
     mediaconvert.create_job(**job_settings)
 
+    edit_session_table.update_item(
+        Key={"sessionId": session_id},
+        UpdateExpression="SET #videoStatus = :videoStatus",
+        ExpressionAttributeNames={"#videoStatus": "videoStatus"},
+        ExpressionAttributeValues={":videoStatus": "PROCESSING"},
+    )
+
     return {"statusCode": 200}

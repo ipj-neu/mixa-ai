@@ -41,6 +41,13 @@ def handle_message(event, context):
         MessageBody=json.dumps(message, default=converter),
     )
 
+    edit_session_table.update_item(
+        Key={"sessionId": session_id},
+        UpdateExpression="SET #st = :processing_val",
+        ExpressionAttributeNames={"#st": "status"},
+        ExpressionAttributeValues={":processing_val": "AGENT PROCESSING"},
+    )
+
     return {
         "statusCode": 200,
         "body": "message processing started",

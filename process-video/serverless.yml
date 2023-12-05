@@ -243,6 +243,7 @@ stepFunctions:
                 message:
                   action: "videoProcessingComplete"
                   videoId.$: $$.Execution.Input.videoId
+                  videoKey.$: $$.Execution.Input.videoKey
             End: true
 
 resources:
