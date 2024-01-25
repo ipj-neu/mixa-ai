@@ -17,11 +17,14 @@ provider:
             - dynamodb:*
             - mediaconvert:*
             - iam:PassRole
-          Resource: '*'
+          Resource: "*"
+
 plugins:
   - serverless-offline
+
 package:
   individually: true
+
 functions:
   get-user-sessions:
     name: get-user-sessions-${opt:stage, self:provider.stage}
@@ -32,6 +35,7 @@ functions:
           method: GET
           authorizer:
             type: aws_iam
+
   create-chat-session:
     name: create-edit-sessions-${opt:stage, self:provider.stage}
     handler: handle_post.handler
@@ -44,6 +48,7 @@ functions:
           method: POST
           authorizer:
             type: aws_iam
+
   delete-edit-session:
     name: delete-edit-session-${opt:stage, self:provider.stage}
     handler: handle_delete.handler
@@ -56,6 +61,7 @@ functions:
           method: DELETE
           authorizer:
             type: aws_iam
+
   get-conversation:
     name: get-edit-session-${opt:stage, self:provider.stage}
     handler: handle_get.handler
@@ -68,6 +74,7 @@ functions:
           method: GET
           authorizer:
             type: aws_iam
+
   add-video:
     name: add-video-${opt:stage, self:provider.stage}
     handler: handle_add_video.handler
@@ -80,6 +87,7 @@ functions:
           method: POST
           authorizer:
             type: aws_iam
+
   convert-edit:
     name: convert-edit-${opt:stage, self:provider.stage}
     handler: handle_convert.handler
@@ -92,6 +100,7 @@ functions:
           method: POST
           authorizer:
             type: aws_iam
+
   save-edit:
     name: save-edit-${opt:stage, self:provider.stage}
     handler: handle_save.handler
@@ -101,6 +110,17 @@ functions:
           method: POST
           authorizer:
             type: aws_iam
+
+  update-name:
+    name: update-name
+    handler: handle_update_name.handler
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/session/{sessionId}/name
+          method: POST
+          authorizer:
+            type: aws_iam
+
   ping:
     name: ping-${opt:stage, self:provider.stage}
     handler: testing.testing
@@ -110,6 +130,7 @@ functions:
           method: POST
           authorizer:
             type: aws_iam
+
 custom:
   serverless-offline:
     ignoreJWTSignature: true

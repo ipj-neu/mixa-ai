@@ -14,6 +14,7 @@ def handler(event, context):
     starting_session = {
         "sessionId": edit_session_uuid,
         "userId": user_id,
+        "name": "New Edit",
         "videos": {},
         "currentEdit": [],
         "status": "IDLE",
