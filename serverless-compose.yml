@@ -6,56 +6,44 @@ services:
   resources:
     path: resources
 
+  socket:
+    path: socket
+
+  edit-sessions:
+    path: edit-sessions
+
   process-video:
     path: process-video
     params:
       rekSNSTopic: ${resources.rekSNSTopic}
       rekRole: ${resources.rekRole}
-
-  process-rek:
-    path: process-rek
-    params:
-      rekSQSQueue: ${resources.rekSQSQueue}
+      sendMessagesTopicArn: ${socket.sendMessagesTopicArn}
 
   auth:
     path: auth
     params:
       videosS3Name: ${process-video.videosS3Name}
 
-  fetch-rek:
-    path: fetch-rek
+  process-video-data:
+    path: process-video-data
     params:
-      rekSNSTopic: ${resources.rekSNSTopic}
-      rekRole: ${resources.rekRole}
-      videosS3Name: ${process-video.videosS3Name}
+      rekSQSQueue: ${resources.rekSQSQueue}
+      transcriptionSNSArn: ${resources.transcriptionSNSArn}
+
+  process-convert:
+    path: process-convert
+    params:
+      mediaConvertSNSArn: ${resources.mediaConvertSNSArn}
+      sendMessagesTopicArn: ${socket.sendMessagesTopicArn}
 
   video-ai:
     path: video-ai
     params:
-      cognitoUserPoolId: ${auth.cognitoUserPoolId}
-      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
-
-  process-message:
-    path: process-message
-    params:
-      startJobLambdaArn: ${fetch-rek.startJobLambdaArn}
-      videoAILambdaArn: ${video-ai.videoAILambdaArn}
-
-  chat-sessions:
-    path: chat-sessions
-    params:
-      cognitoUserPoolId: ${auth.cognitoUserPoolId}
-      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
-
-  # socket:
-  #   path: socket
-  #   params:
-  #     cognitoUserPoolId: ${auth.cognitoUserPoolId}
-  #     statusesTableStreamArn: ${resources.statusesTableStreamArn}
+      agentQueueArn: ${resources.agentQueueArn}
+      sendMessagesTopicArn: ${socket.sendMessagesTopicArn}
 
   new-message:
     path: new-message
     params:
-      cognitoUserPoolId: ${auth.cognitoUserPoolId}
-      cognitoUserPoolClientId: ${auth.cognitoUserPoolClientId}
-      videoAIStateMachineArn: ${process-message.videoAIStateMachineArn}
+      agentQueueArn: ${resources.agentQueueArn}
+      agentQueueUrl: ${resources.agentQueueUrl}

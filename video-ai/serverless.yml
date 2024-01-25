@@ -12,13 +12,6 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
-  httpApi:
-    authorizers:
-      cognitoAuthorizer:
-        identitySource: $request.header.Authorization
-        issuerUrl: https://cognito-idp.${opt:region, self:provider.region}.amazonaws.com/${param:cognitoUserPoolId}
-        audience:
-          - ${param:cognitoUserPoolClientId}
   iam:
     role:
       statements:
@@ -26,41 +19,44 @@ provider:
           Action:
             - "dynamodb:*"
           Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "mediaconvert:*"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "iam:PassRole"
+            - "sns:Publish"
+          Resource: "*"
 
 package:
   individually: true
   patterns:
     - "!venv/**"
     - "!**/__pychache__/**"
+    - "!requirements.txt"
 
 plugins:
   - serverless-offline
   - serverless-python-requirements
   - serverless-dotenv-plugin
-  - serverless-prune-plugin
 
 functions:
   video-ai:
     name: video-ai-${opt:stage, self:provider.stage}
-    handler: handler.step_function_testing
-    module: src/testing
-
-resources:
-  Outputs:
-    videoAILambdaArn:
-      Value:
-        Fn::GetAtt:
-          - VideoDashaiLambdaFunction
-          - Arn
+    handler: src.handler.video_agent
+    timeout: 900
+    events:
+      - sqs:
+          arn: ${param:agentQueueArn}
+          batchSize: 1
+    environment:
+      MESSAGES_TOPIC_ARN: ${param:sendMessagesTopicArn}
 
 custom:
   pythonRequirements:
     zip: true
-    slim: true
     dockerizePip: true
     noDeploy:
       - boto3
       - botocore
-
-  serverless-offline:
-    ignoreJWTSignature: true

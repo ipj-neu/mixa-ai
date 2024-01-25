@@ -1,0 +1,64 @@
+org: ipj31
+app: video-ai
+service: process-video-data
+
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: python3.11
+  region: us-east-1
+  environment:
+    STAGE: ${opt:stage, self:provider.stage}
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "rekognition:GetLabelDetection"
+            - "rekognition:GetSegmentDetection"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:*"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "states:SendTaskSuccess"
+            - "states:SendTaskFailure"
+          Resource: "*"
+        - Effect: "Allow"
+          Action:
+            - "transcribe:GetTranscriptionJob"
+          Resource: "*"
+
+plugins:
+  - serverless-offline
+
+package:
+  individually: true
+  patterns:
+    - "!handler_rek.py"
+    - "!handle_transcription.py"
+
+# TODO need to add better error handling to rerun when needed
+functions:
+  process-rek:
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-rek
+    handler: handle_rek.handler
+    package:
+      include:
+        - handle_rek.py
+    events:
+      - sqs:
+          arn: ${param:rekSQSQueue}
+
+  process-transcription:
+    name: ${self:service}-${opt:stage, self:provider.stage}-process-transcription
+    handler: handle_transcription.handler
+    package:
+      include:
+        - handle_transcription.py
+    events:
+      - sns:
+          arn: ${param:transcriptionSNSArn}

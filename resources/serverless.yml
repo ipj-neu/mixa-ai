@@ -11,11 +11,11 @@ provider:
 # All resources declared here and shared with other services
 resources:
   Resources:
-    # Table chat sessions includes mesages and videos in a chat session
-    ChatSessions:
+    # Table for the videos for each chat session
+    EditSessions:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-chat-sessions
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-edit-session
         AttributeDefinitions:
           - AttributeName: sessionId
             AttributeType: S
@@ -24,8 +24,33 @@ resources:
         KeySchema:
           - AttributeName: sessionId
             KeyType: HASH
+        GlobalSecondaryIndexes:
+          - IndexName: UserIdIndex
+            KeySchema:
+              - AttributeName: userId
+                KeyType: HASH
+            Projection:
+              ProjectionType: ALL
+            ProvisionedThroughput:
+              ReadCapacityUnits: 1
+              WriteCapacityUnits: 1
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # Table of users videos
+    UserVideos:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-user-videos
+        AttributeDefinitions:
+          - AttributeName: videoId
+            AttributeType: S
           - AttributeName: userId
-            KeyType: RANGE
+            AttributeType: S
+        KeySchema:
+          - AttributeName: videoId
+            KeyType: HASH
         GlobalSecondaryIndexes:
           - IndexName: UserIdIndex
             KeySchema:
@@ -44,7 +69,7 @@ resources:
     Connections:
       Type: AWS::DynamoDB::Table
       Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-connections
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-user-connections
         AttributeDefinitions:
           - AttributeName: connectionId
             AttributeType: S
@@ -53,8 +78,6 @@ resources:
         KeySchema:
           - AttributeName: connectionId
             KeyType: HASH
-          - AttributeName: userId
-            KeyType: RANGE
         GlobalSecondaryIndexes:
           - IndexName: UserIdIndex
             KeySchema:
@@ -69,38 +92,8 @@ resources:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
 
-    # table for step function statuses and streaming to lambda
-    MessageProcessingStatuses:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:app}-${opt:stage, self:provider.stage}-message-processing-statuses
-        AttributeDefinitions:
-          - AttributeName: sessionId
-            AttributeType: S
-          - AttributeName: userId
-            AttributeType: S
-        KeySchema:
-          - AttributeName: sessionId
-            KeyType: HASH
-          - AttributeName: userId
-            KeyType: RANGE
-        GlobalSecondaryIndexes:
-          - IndexName: UserIdIndex
-            KeySchema:
-              - AttributeName: userId
-                KeyType: HASH
-            Projection:
-              ProjectionType: ALL
-            ProvisionedThroughput:
-              ReadCapacityUnits: 1
-              WriteCapacityUnits: 1
-        ProvisionedThroughput:
-          ReadCapacityUnits: 1
-          WriteCapacityUnits: 1
-        StreamSpecification:
-          StreamViewType: NEW_AND_OLD_IMAGES
-
-    # TODO Possibly rename with stage
+    # Resources for Rekognition to send messages to SQS
+    # NOTE this way probably overkill and we could just use SNS
     RekSNSTopic:
       Type: "AWS::SNS::Topic"
       Properties:
@@ -164,6 +157,125 @@ resources:
                   Resource:
                     - !Ref RekSNSTopic
 
+    # Resources for media convert jobs complete events
+    MediaConvertSNSTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: MediaConvertTopic
+
+    MediaConvertEventBridgeRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: MediaConvertEventBridgeRule
+        Description: "Rule for MediaConvert events"
+        EventPattern:
+          source:
+            - aws.mediaconvert
+          detail-type:
+            - "MediaConvert Job State Change"
+          detail:
+            status:
+              - COMPLETE
+        Targets:
+          - Arn:
+              Ref: MediaConvertSNSTopic
+            Id: MediaConvertSNSTopic
+
+    MediaConvertSNSPolicy:
+      Type: "AWS::SNS::TopicPolicy"
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: sns:Publish
+              Resource:
+                Ref: MediaConvertSNSTopic
+        Topics:
+          - Ref: MediaConvertSNSTopic
+
+    # Resources for transcode jobs complete events
+    TranscriptionSNSTopic:
+      Type: "AWS::SNS::Topic"
+      Properties:
+        TopicName: TransriptionTopic
+
+    TranscriptionEventBridgeRule:
+      Type: "AWS::Events::Rule"
+      Properties:
+        Name: TranscriptionEventBridgeRule
+        Description: "Rule for Transcription events"
+        EventPattern:
+          source:
+            - aws.transcribe
+          detail-type:
+            - "Transcribe Job State Change"
+          detail:
+            TranscriptionJobStatus:
+              - COMPLETED
+              - FAILED
+        Targets:
+          - Arn:
+              Ref: TranscriptionSNSTopic
+            Id: TranscriptionSNSTopic
+
+    TranscriptionSNSPolicy:
+      Type: "AWS::SNS::TopicPolicy"
+      Properties:
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service: events.amazonaws.com
+              Action: sns:Publish
+              Resource:
+                Ref: TranscriptionSNSTopic
+        Topics:
+          - Ref: TranscriptionSNSTopic
+
+    # Table to store transcribe task token
+    TranscriptionTaskTokenTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-transcription-task-token
+        AttributeDefinitions:
+          - AttributeName: transcribeJobName
+            AttributeType: S
+        KeySchema:
+          - AttributeName: transcribeJobName
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    # Queue for agent to process messages
+    AgentQueue:
+      Type: AWS::SQS::Queue
+      Properties:
+        QueueName: AgentQueue
+        VisibilityTimeout: 900
+
+    # Table for WebSocket preflight temp passwords
+    WebSocketPreflightTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:app}-${opt:stage, self:provider.stage}-websocket-preflight
+        AttributeDefinitions:
+          - AttributeName: tempPassword
+            AttributeType: S
+        KeySchema:
+          - AttributeName: tempPassword
+            KeyType: HASH
+        TimeToLiveSpecification:
+          Enabled: true
+          AttributeName: ttl
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
   Outputs:
     rekRole:
       Value:
@@ -181,8 +293,20 @@ resources:
           - RekSQSQueue
           - Arn
 
-    statusesTableStreamArn:
+    mediaConvertSNSArn:
+      Value:
+        Ref: MediaConvertSNSTopic
+
+    transcriptionSNSArn:
+      Value:
+        Ref: TranscriptionSNSTopic
+
+    agentQueueUrl:
+      Value:
+        Ref: AgentQueue
+
+    agentQueueArn:
       Value:
         Fn::GetAtt:
-          - MessageProcessingStatuses
-          - StreamArn
+          - AgentQueue
+          - Arn

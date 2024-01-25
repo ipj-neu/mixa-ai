@@ -10,6 +10,8 @@ provider:
   region: us-east-1
   environment:
     STAGE: ${opt:stage, self:provider.stage}
+  httpApi:
+    cors: true
   iam:
     role:
       statements:
@@ -21,64 +23,74 @@ provider:
 package:
   individually: true
   exclude:
-    - venv/**
     - __pycache__/**
-    - requirements.txt
     - authorizer.py
-    - notify-user.py
+    - notify_user.py
+    - handler.py
+    - get_temp_password.py
 
 plugins:
   - serverless-offline
-  - serverless-python-requirements
 
 functions:
   on-connect-socket:
     name: on-connect-socket-${opt:stage, self:provider.stage}
     handler: handler.on_connect
+    package:
+      include:
+        - handler.py
     events:
       - websocket:
           route: $connect
           authorizer:
             name: socket-authorizer
+            identitySource:
+              - "route.request.querystring.tempPassword"
 
   on-disconnect-socket:
     name: on-disconnect-socket-${opt:stage, self:provider.stage}
     handler: handler.on_disconnect
+    package:
+      include:
+        - handler.py
     events:
       - websocket:
           route: $disconnect
 
   socket-authorizer:
     name: socket-authorizer-${opt:stage, self:provider.stage}
-    handler: authorizer.lambda_handler
+    handler: authorizer.handler
     package:
       include:
         - authorizer.py
-      exclude:
-        - handler.py
-    layers:
-      - !Ref PythonRequirementsLambdaLayer
-    environment:
-      COGNITO_USER_POOL_ID: ${param:cognitoUserPoolId}
-      REGION: ${self:provider.region}
+
+  get-temp-password:
+    name: get-temp-password-${opt:stage, self:provider.stage}
+    handler: get_temp_password.handler
+    package:
+      include:
+        - get_temp_password.py
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/temp-password
+          method: GET
+          authorizer:
+            type: aws_iam
 
   notify-user:
     name: notify-user-${opt:stage, self:provider.stage}
-    handler: notify-user.handler
+    handler: notify_user.handler
     package:
-      exclude:
-        - handler.py
       include:
-        - notify-user.py
+        - notify_user.py
+    events:
+      - sns: ${self:app}-${opt:stage, self:provider.stage}-send-message
     environment:
       DOMAIN: !Ref WebsocketsApi
       REGION: ${self:provider.region}
-    events:
-      - stream:
-          arn: ${param:statusesTableStreamArn}
-          filterPatterns:
-            - eventName: [MODIFY]
 
-custom:
-  pythonRequirements:
-    layer: true
+resources:
+  Outputs:
+    sendMessagesTopicArn:
+      Value:
+        Ref: SNSTopicVideoaidevsendmessage

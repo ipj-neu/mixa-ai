@@ -4,12 +4,16 @@ service: video-processing
 
 frameworkVersion: "3"
 
+useDotenv: true
+
 provider:
   name: aws
   region: us-east-1
   runtime: python3.11
   environment:
     STAGE: ${opt:stage, self:provider.stage}
+  httpApi:
+    cors: true
   s3:
     videos:
       name: ${self:app}-videos-${opt:stage, self:provider.stage}
@@ -38,19 +42,27 @@ provider:
         - Effect: "Allow"
           Action:
             - "s3:*"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
             - "dynamodb:*"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
-            - "rekognition:StartLabelDetection"
-          Resource: "*"
-        - Effect: "Allow"
-          Action:
             - "iam:PassRole"
+            - "states:StartExecution"
+            - "states:SendTaskSuccess"
+            - "states:SendTaskFailure"
+            - "rekognition:StartLabelDetection"
+            - "rekognition:GetLabelDetection"
+            - "transcribe:StartTranscriptionJob"
+            - "transcribe:GetTranscriptionJob"
           Resource: "*"
+
+plugins:
+  - serverless-step-functions
+  - serverless-python-requirements
+  - serverless-dotenv-plugin
+
+custom:
+  pythonRequirements:
+    layer: true
+    dockerizePip: true
+    dockerImage: python:3.11
 
 layers:
   ffprobe:
@@ -59,23 +71,180 @@ layers:
       - python3.11
 
 package:
+  individually: true
   patterns:
+    - "!venv/**"
+    - "!requirements.txt"
     - "!ffprobe-layer/**"
+    - "!on_new_video.py"
+    - "!fetch_data.py"
+    - "!embed_video_data.py"
+    - "!validate_pinecone_index.py"
+    - "!delete_video.py"
+    - "!get_user_videos.py"
 
 functions:
-  process:
+  # Processes video when uploaded to S3
+  process-video:
     name: ${self:service}-${opt:stage, self:provider.stage}
-    handler: handler.on_new_video
+    handler: on_new_video.on_new_video
+    package:
+      include:
+        - on_new_video.py
     events:
       - s3:
           bucket: videos
           event: s3:ObjectCreated:*
-
     layers:
       - !Ref FfprobeLambdaLayer
     environment:
-      REK_SNS_TOPIC: ${param:rekSNSTopic}
-      REK_ROLE: ${param:rekRole}
+      PROCESS_VIDEO_STATE_MACHINE_ARN:
+        Ref: ProcessDashvideoDash${opt:stage, self:provider.stage}
+
+  # Starts the jobs depending on job type
+  fetch-data:
+    name: ${self:service}-${opt:stage, self:provider.stage}-fetch-rek
+    handler: fetch_data.handler
+    package:
+      include:
+        - fetch_data.py
+    environment:
+      REKOGNITION_TOPIC_ARN: ${param:rekSNSTopic}
+      REKOGNITION_ROLE_ARN: ${param:rekRole}
+      VIDEO_BUCKET: ${self:provider.s3.videos.name}
+
+  # Creates embeddings from the video data and puts them into the Pinecone database
+  embed-video-data:
+    name: ${self:service}-${opt:stage, self:provider.stage}-embed-video-data
+    handler: embed_video_data.handler
+    timeout: 900
+    package:
+      include:
+        - embed_video_data.py
+    layers:
+      - !Ref PythonRequirementsLambdaLayer
+
+  # Get all user's videos
+  get-user-videos:
+    name: ${self:service}-${opt:stage, self:provider.stage}-get-user-videos
+    handler: get_user_videos.handler
+    package:
+      include:
+        - get_user_videos.py
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/videos
+          method: get
+          authorizer:
+            type: aws_iam
+
+  # Delete a video
+  delete-video:
+    name: ${self:service}-${opt:stage, self:provider.stage}-delete-video
+    handler: delete_video.handler
+    package:
+      include:
+        - delete_video.py
+    environment:
+      VIDEO_BUCKET: ${self:provider.s3.videos.name}
+    events:
+      - httpApi:
+          path: /${opt:stage, self:provider.stage}/video/{videoId}
+          method: delete
+          authorizer:
+            type: aws_iam
+    layers:
+      - !Ref PythonRequirementsLambdaLayer
+
+stepFunctions:
+  stateMachines:
+    procesVideo:
+      name: process-video-${opt:stage, self:provider.stage}
+
+      definition:
+        StartAt: FetchConfig
+        States:
+          # The jobs that will be fetched and processed, static for now
+          # Will let user choose in the future
+          FetchConfig:
+            Type: Pass
+            Parameters:
+              - jobType:
+                  type: rek
+                  rekType: label
+                videoKey.$: $.videoKey
+                videoId.$: $.videoId
+              - jobType:
+                  type: transcribe
+                videoUri.$: $.videoUri
+                videoId.$: $.videoId
+            Next: GetDataMap
+
+          GetDataMap:
+            Type: Map
+            ItemProcessor:
+              ProcessorConfig:
+                Mode: INLINE
+
+              StartAt: FetchData
+              States:
+                FetchData:
+                  Type: Task
+                  Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
+                  Parameters:
+                    FunctionName:
+                      Fn::GetAtt:
+                        - fetch-data
+                        - Arn
+                    Payload:
+                      job.$: $
+                      taskToken.$: $$.Task.Token
+                  Next: EmbedVideoData
+
+                EmbedVideoData:
+                  Type: Task
+                  Resource: arn:aws:states:::lambda:invoke.waitForTaskToken
+                  Parameters:
+                    FunctionName:
+                      Fn::GetAtt:
+                        - embed-video-data
+                        - Arn
+                    Payload:
+                      job.$: $
+                      taskToken.$: $$.Task.Token
+                      videoId.$: $$.Execution.Input.videoId
+                  End: true
+
+            Next: UpdateVideoStatus
+
+          UpdateVideoStatus:
+            Type: Task
+            Resource: arn:aws:states:::dynamodb:updateItem
+            Parameters:
+              TableName: ${self:app}-${opt:stage, self:provider.stage}-user-videos
+              Key:
+                videoId:
+                  S.$: $$.Execution.Input.videoId
+              UpdateExpression: "SET #status = :status"
+              ExpressionAttributeNames:
+                "#status": "status"
+              ExpressionAttributeValues:
+                ":status":
+                  S: "COMPLETE"
+            Next: NotifyUser
+
+          NotifyUser:
+            Type: Task
+            Resource: arn:aws:states:::sns:publish
+            Parameters:
+              TopicArn: ${param:sendMessagesTopicArn}
+              Message:
+                userId.$: $$.Execution.Input.userId
+                message:
+                  action: "videoProcessingComplete"
+                  videoId.$: $$.Execution.Input.videoId
+                  videoKey.$: $$.Execution.Input.videoKey
+            End: true
 
 resources:
   Outputs:
