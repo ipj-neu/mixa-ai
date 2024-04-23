@@ -1,8 +1,14 @@
 # Welcome to mixa-ai
 
-## Introduction / Overview
+## Introduction
 
-Hi! I am Isaac Johnson and this is my capstone project mixa-ai! Mixa-ai is a cloud based and AI power video editing website. Integrating the latest from vision, language, and embedding AI to create a streamlined video editing experience. This document will go over the more technical details of the project, so buckle up! For a less technical information please visit the informational website here http://www.mixa-ai.com.
+Hello! My name is Isaac Johnson, and welcome to my capstone project, mixa-ai. Mixa-ai is a cloud-based, AI-powered video editing platform that leverages cutting-edge technologies in vision, language processing, and AI embeddings to offer a seamless video editing experience. This document is dedicated to providing a detailed technical overview of the project. So, get ready for a deep dive! For those interested in less technical details, the informational website contains a general overview of what mixa-ai does and the does and outline project goals. Please visit https://www.mixa-ai.com for more details.
+
+Feel free to reach out to me on [LinkedIn](https://www.linkedin.com/in/isaac-johnson-0b09ab231/) or [Github](https://github.com/ipj-neu) with any questions!
+
+This README is a work in progress and I am working to make sure it is as detailed as possible. If you have any questions or would like to know more about a specific part of the project please reach out to me!
+
+# Tech Stack
 
 ## Frameworks and Cloud Providers
 
@@ -54,4 +60,22 @@ Hi! I am Isaac Johnson and this is my capstone project mixa-ai! Mixa-ai is a clo
 
 ### Changes to the tools
 
-Midway through the project OpenAI introduced it's Assistants. I am using the Python package LangChain in the project currently. While this package made development a little easy with it's tools for embeddings and Pinecone, it has many issues and the main problems it was solving where solved by in introduction of Assistants. In the future, I would want to migrate to using Assistants.
+Midway through the project OpenAI introduced it's Assistants. I am using the Python package LangChain in the project currently. While this package made development a little easier with it's tools for embeddings, agents, and Pinecone, it has many issues and the main problems it was solving where solved by in introduction of Assistants. In the future, I would want to migrate to using Assistants.
+
+# Back End Architecture
+
+Back end architecture design was one of the skills I really wanted to practice in this project. While this back end is far from perfect, I learned a lot designing it and am excited to apply that learning to other projects! The goals of this back end were to keep the cost low using only serverless components and create more complex systems. Here is an image diagraming the final layout.
+
+![Backend Architecture](./readme-images/capstone-backend.png)
+
+# How it works
+
+## Uploading a video
+
+1. User uploads a securely uploads a video to there authorized S3 folder
+2. Videos are processed by Amazon Rekognition video AI and Amazon's video transcriber
+3. Data is received and processed into a standard format
+4. The standardized data is then sent to OpenAI's embedding model and an embedding embedding is received
+5. Embedding is saved in a Pinecone cluster with the relevant metadata
+
+This process is done as asynchronously as possible using an aws step function
